@@ -1,0 +1,251 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Account Created - R-kive</title>
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            line-height: 1.6;
+            color: #333;
+            background-color: #f4f4f4;
+            margin: 0;
+            padding: 20px;
+        }
+        .container {
+            max-width: 600px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 10px;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+            overflow: hidden;
+        }
+        .header {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 30px;
+            text-align: center;
+        }
+        .header h1 {
+            margin: 0;
+            font-size: 28px;
+            font-weight: 600;
+        }
+        .content {
+            padding: 40px 30px;
+        }
+        .welcome-text {
+            font-size: 18px;
+            margin-bottom: 30px;
+            color: #555;
+        }
+        .credentials-box {
+            background: #f8f9ff;
+            border: 2px solid #e1e5f9;
+            border-radius: 8px;
+            padding: 25px;
+            margin: 25px 0;
+        }
+        .credentials-title {
+            font-size: 16px;
+            font-weight: 600;
+            color: #4c51bf;
+            margin-bottom: 15px;
+            display: flex;
+            align-items: center;
+        }
+        .credential-item {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 10px;
+            padding: 8px 0;
+            border-bottom: 1px solid #e2e8f0;
+        }
+        .credential-item:last-child {
+            border-bottom: none;
+            margin-bottom: 0;
+        }
+        .credential-label {
+            font-weight: 600;
+            color: #2d3748;
+        }
+        .credential-value {
+            font-family: 'Courier New', monospace;
+            background: #edf2f7;
+            padding: 4px 8px;
+            border-radius: 4px;
+            color: #2d3748;
+        }
+        .button {
+            display: inline-block;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 15px 30px;
+            text-decoration: none;
+            border-radius: 8px;
+            font-weight: 600;
+            margin: 20px 0;
+            text-align: center;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+            transition: transform 0.2s;
+        }
+        .button:hover {
+            transform: translateY(-2px);
+        }
+        .instructions {
+            background: #fff5f5;
+            border-left: 4px solid #f56565;
+            padding: 15px;
+            margin: 20px 0;
+            border-radius: 0 4px 4px 0;
+        }
+        .instructions h3 {
+            margin-top: 0;
+            color: #c53030;
+        }
+        .footer {
+            background: #f7fafc;
+            padding: 20px 30px;
+            text-align: center;
+            color: #718096;
+            font-size: 14px;
+        }
+        .security-note {
+            background: #fffbf0;
+            border: 1px solid #f6e05e;
+            border-radius: 6px;
+            padding: 15px;
+            margin: 20px 0;
+        }
+        .security-note h4 {
+            margin-top: 0;
+            color: #b7791f;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>🎓 Welcome to R-kive</h1>
+            {{ if .Data.createdByAdmin }}
+            <p>Your account has been created by an administrator!</p>
+            {{ else }}
+            <p>Please confirm your email to complete registration!</p>
+            {{ end }}
+        </div>
+        
+        <div class="content">
+            {{ if .Data.createdByAdmin }}
+            <!-- Admin-created account message -->
+            <p class="welcome-text">
+                Hello! An administrator has created an account for you in the R-kive research repository system.
+            </p>
+            
+            <div class="credentials-box">
+                <div class="credentials-title">
+                    🔐 Your Login Credentials
+                </div>
+                <div class="credential-item">
+                    <span class="credential-label">Email:</span>
+                    <span class="credential-value">{{ .Email }}</span>
+                </div>
+                <div class="credential-item">
+                    <span class="credential-label">Temporary Password:</span>
+                    <span class="credential-value">{{ .Data.password }}</span>
+                </div>
+                <div class="credential-item">
+                    <span class="credential-label">Role:</span>
+                    <span class="credential-value">{{ .Data.role }}</span>
+                </div>
+            </div>
+
+            <div class="instructions">
+                <h3>📋 Next Steps:</h3>
+                <ol>
+                    <li>Click the "Confirm Account" button below</li>
+                    <li>Login using your email and temporary password</li>
+                    <li><strong>You will be required to change your password</strong> upon first login</li>
+                    <li>Complete your profile information</li>
+                </ol>
+            </div>
+            {{ else }}
+            <!-- Self-registered student account message -->
+            <p class="welcome-text">
+                Welcome to R-kive! Thank you for creating your student account in our research repository system.
+            </p>
+            
+            <div class="credentials-box">
+                <div class="credentials-title">
+                    ✅ Account Information
+                </div>
+                <div class="credential-item">
+                    <span class="credential-label">Email:</span>
+                    <span class="credential-value">{{ .Email }}</span>
+                </div>
+                <div class="credential-item">
+                    <span class="credential-label">Full Name:</span>
+                    <span class="credential-value">{{ .Data.full_name }}</span>
+                </div>
+                <div class="credential-item">
+                    <span class="credential-label">Role:</span>
+                    <span class="credential-value">Student</span>
+                </div>
+            </div>
+
+            <div class="instructions">
+                <h3>📋 Next Steps:</h3>
+                <ol>
+                    <li>Click the "Confirm Account" button below to verify your email</li>
+                    <li>Login using your email and the password you created during registration</li>
+                    <li>Complete your profile information in the settings</li>
+                    <li>Start browsing and accessing research papers</li>
+                </ol>
+            </div>
+            {{ end }}
+
+            <div style="text-align: center;">
+                <a href="{{ .ConfirmationURL }}" class="button">
+                    ✅ Confirm Account & Login
+                </a>
+            </div>
+
+            {{ if .Data.createdByAdmin }}
+            <div class="security-note">
+                <h4>🔒 Security Notice</h4>
+                <p>
+                    For your security, you will be required to change your temporary password immediately upon first login. 
+                    Never share your login credentials with anyone.
+                </p>
+            </div>
+            {{ else }}
+            <div class="security-note">
+                <h4>🎓 Getting Started</h4>
+                <p>
+                    Your account is set up as a student. You can browse research papers, request access to full documents, 
+                    and potentially become a research proponent if promoted by an administrator.
+                </p>
+            </div>
+            {{ end }}
+        </div>
+        
+        <div class="footer">
+            {{ if .Data.createdByAdmin }}
+            <p>
+                This email was sent because an administrator created an account for you in R-kive.<br>
+                If you believe this was sent in error, please contact your system administrator.
+            </p>
+            {{ else }}
+            <p>
+                This email was sent to confirm your R-kive account registration.<br>
+                If you did not create this account, please ignore this email.
+            </p>
+            {{ end }}
+            <p>
+                <strong>R-kive Research Repository System</strong><br>
+                Powered by Supabase
+            </p>
+        </div>
+    </div>
+</body>
+</html>
