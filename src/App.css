@@ -387,6 +387,73 @@ main {
 }
 
 @media (max-width: 768px) {
+  /* Force light mode for Browse Topics section on mobile */
+  .explore-section {
+    background-color: #ffffff !important;
+    color: #333333 !important;
+  }
+
+  /* Override dark mode styles for Browse Topics */
+  .dark .explore-section {
+    background-color: #ffffff !important;
+    color: #333333 !important;
+  }
+
+  .explore-section h2 {
+    color: #333333 !important;
+  }
+
+  .dark .explore-section h2 {
+    color: #333333 !important;
+  }
+
+  /* Ensure dropdown and category buttons stay light */
+  .explore-section .category-dropdown,
+  .explore-section select,
+  .explore-section button {
+    background-color: #ffffff !important;
+    color: #333333 !important;
+    border-color: #dddddd !important;
+  }
+
+  .dark .explore-section .category-dropdown,
+  .dark .explore-section select,
+  .dark .explore-section button {
+    background-color: #ffffff !important;
+    color: #333333 !important;
+    border-color: #dddddd !important;
+  }
+
+  /* Force light mode for topic cards */
+  .explore-section .custom-block {
+    background-color: #ffffff !important;
+    color: #333333 !important;
+  }
+
+  .dark .explore-section .custom-block {
+    background-color: #ffffff !important;
+    color: #333333 !important;
+  }
+
+  /* Force light mode for paper content within browse topics */
+  .explore-section .paper-title,
+  .explore-section .paper-authors,
+  .explore-section .paper-year,
+  .explore-section p,
+  .explore-section span,
+  .explore-section div {
+    color: #333333 !important;
+  }
+
+  .dark .explore-section .paper-title,
+  .dark .explore-section .paper-authors,
+  .dark .explore-section .paper-year,
+  .dark .explore-section p,
+  .dark .explore-section span,
+  .dark .explore-section div {
+    color: #333333 !important;
+  }
+
   .header-container {
     height: 60px;
     padding: 0;
