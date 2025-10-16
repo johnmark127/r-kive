@@ -242,95 +242,99 @@ const BrowseProjectsPage = () => {
   }
 
   return (
-    <div className="p-6 space-y-6 bg-gray-50 min-h-screen">
+    <div className="space-y-4 sm:space-y-6 bg-gray-50 min-h-screen">
       <ToastManager />
       {/* Header */}
-      <div className="bg-white rounded-lg p-6 shadow-sm border">
-        <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">
+      <div className="bg-white rounded-lg p-4 sm:p-6 shadow-sm border">
+        <div className="flex flex-col gap-4">
           <div>
-            <h1 className="text-2xl font-bold text-gray-900 mb-1">Browse Research Papers</h1>
-            <p className="text-gray-600">Discover and explore academic research from our collection</p>
+            <h1 className="text-xl sm:text-2xl font-bold text-gray-900 mb-1">Browse Research Papers</h1>
+            <p className="text-sm sm:text-base text-gray-600">Discover and explore academic research from our collection</p>
           </div>
           {/* Search Bar */}
-          <div className="relative max-w-md w-full">
+          <div className="relative w-full">
             <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
             <input
               type="text"
               placeholder="Search by title, author, or keywords..."
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              className="w-full pl-10 pr-8 py-2 text-sm bg-white border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all"
+              className="w-full pl-10 pr-4 py-2.5 sm:py-2 text-sm bg-white border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all"
             />
           </div>
         </div>
       </div>
 
-      {/* Filters */}
-      <Card>
-        <CardContent>
-          <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-            <div>
-              <select
-                value={categoryFilter}
-                onChange={(e) => setCategoryFilter(e.target.value)}
-                className="w-full p-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent mt-6"
-              >
-                <option value="">All Categories</option>
-                {categories.map((category) => (
-                  <option key={category} value={category}>
-                    {category}
-                  </option>
-                ))}
-              </select>
-            </div>
-            <div>
-              <select
-                value={yearFilter}
-                onChange={(e) => setYearFilter(e.target.value)}
-                className="w-full p-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent mt-6"
-              >
-                <option value="">All Years</option>
-                {years.map((year) => (
-                  <option key={year} value={year}>
-                    {year}
-                  </option>
-                ))}
-              </select>
-            </div>
-            <div>
-              <select
-                value={sortFilter}
-                onChange={(e) => setSortFilter(e.target.value)}
-                className="w-full p-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent mt-6"
-              >
-                <option value="relevance">Relevance</option>
-                <option value="date">Date</option>
-                <option value="views">Views</option>
-                <option value="title">Title</option>
-              </select>
-            </div>
-            <div className="flex items-end">
+      {/* Compact Filters */}
+      <div className="bg-white rounded-lg border shadow-sm p-3 sm:p-4">
+        <div className="flex flex-col sm:flex-row sm:items-center gap-3 sm:gap-4">
+          <div className="flex flex-wrap items-center gap-2 sm:gap-3 flex-1">
+            <span className="text-sm font-medium text-gray-600 hidden sm:block">Filters:</span>
+            
+            <select
+              value={categoryFilter}
+              onChange={(e) => setCategoryFilter(e.target.value)}
+              className="min-w-0 flex-shrink-0 px-3 py-1.5 text-xs sm:text-sm border border-gray-200 rounded-md focus:ring-1 focus:ring-blue-500 focus:border-blue-500 bg-gray-50 hover:bg-white transition-colors"
+            >
+              <option value="">All Categories</option>
+              {categories.map((category) => (
+                <option key={category} value={category}>
+                  {category}
+                </option>
+              ))}
+            </select>
+            
+            <select
+              value={yearFilter}
+              onChange={(e) => setYearFilter(e.target.value)}
+              className="min-w-0 flex-shrink-0 px-3 py-1.5 text-xs sm:text-sm border border-gray-200 rounded-md focus:ring-1 focus:ring-blue-500 focus:border-blue-500 bg-gray-50 hover:bg-white transition-colors"
+            >
+              <option value="">All Years</option>
+              {years.map((year) => (
+                <option key={year} value={year}>
+                  {year}
+                </option>
+              ))}
+            </select>
+            
+            <select
+              value={sortFilter}
+              onChange={(e) => setSortFilter(e.target.value)}
+              className="min-w-0 flex-shrink-0 px-3 py-1.5 text-xs sm:text-sm border border-gray-200 rounded-md focus:ring-1 focus:ring-blue-500 focus:border-blue-500 bg-gray-50 hover:bg-white transition-colors"
+            >
+              <option value="relevance">Relevance</option>
+              <option value="date">Date</option>
+              <option value="views">Views</option>
+              <option value="title">Title</option>
+            </select>
+            
+            {(categoryFilter || yearFilter || sortFilter !== "relevance") && (
               <Button
-                variant="outline"
+                variant="ghost"
+                size="sm"
                 onClick={() => {
                   setSearchQuery("")
                   setCategoryFilter("")
                   setYearFilter("")
                   setSortFilter("relevance")
                 }}
-                className="w-full"
+                className="flex-shrink-0 px-2 py-1 h-auto text-xs text-gray-500 hover:text-gray-700"
               >
-                Clear Filters
+                Clear
               </Button>
-            </div>
+            )}
           </div>
-        </CardContent>
-      </Card>
+          
+          <div className="text-xs text-gray-500 flex-shrink-0">
+            {sortedPapers.length} papers
+          </div>
+        </div>
+      </div>
 
       {/* Results */}
       <Card>
-        <CardHeader>
-          <CardTitle>
+        <CardHeader className="p-4 sm:p-6">
+          <CardTitle className="text-base sm:text-lg">
             {loading
               ? "Loading..."
               : error
@@ -338,50 +342,52 @@ const BrowseProjectsPage = () => {
               : `Search Results (${sortedPapers.length} papers found)`}
           </CardTitle>
         </CardHeader>
-        <CardContent>
+        <CardContent className="p-4 sm:p-6">
           {loading ? (
-            <div className="text-center py-12">Loading papers...</div>
+            <div className="text-center py-8 sm:py-12">
+              <div className="w-8 h-8 border-4 border-blue-600 border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
+              <p className="text-gray-600">Loading papers...</p>
+            </div>
           ) : error ? (
-            <div className="text-center py-12 text-red-500">{error}</div>
+            <div className="text-center py-8 sm:py-12 text-red-500">{error}</div>
           ) : sortedPapers.length === 0 ? (
-            <div className="text-center py-12">
-              <FileText className="w-12 h-12 text-gray-400 mx-auto mb-4" />
-              <h3 className="text-lg font-medium text-gray-900 mb-2">No papers found</h3>
-              <p className="text-gray-600">Try adjusting your search criteria or filters</p>
+            <div className="text-center py-8 sm:py-12">
+              <FileText className="w-8 h-8 sm:w-12 sm:h-12 text-gray-400 mx-auto mb-4" />
+              <h3 className="text-base sm:text-lg font-medium text-gray-900 mb-2">No papers found</h3>
+              <p className="text-sm sm:text-base text-gray-600 px-4">Try adjusting your search criteria or filters</p>
             </div>
           ) : (
-            <div className="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-6">
+            <div className="grid grid-cols-1 sm:grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-4 sm:gap-6">
               {sortedPapers.map((paper) => (
-                <Card key={paper.id} className="hover:shadow-md transition-all duration-200 hover:scale-[1.02]">
-                  <CardContent className="p-6">
-                    <div className="space-y-4">
+                <Card key={paper.id} className="hover:shadow-md transition-all duration-200 hover:scale-[1.01] sm:hover:scale-[1.02]">
+                  <CardContent className="p-4 sm:p-6">
+                    <div className="space-y-3 sm:space-y-4">
                       <div>
-                        <h3 className="font-semibold text-gray-900 text-lg leading-tight mb-2 line-clamp-2">
+                        <h3 className="font-semibold text-gray-900 text-base sm:text-lg leading-tight mb-2 line-clamp-2">
                           {paper.title}
                         </h3>
                         <div className="flex items-center text-sm text-gray-600 mb-2">
-                          <User className="w-4 h-4 mr-1" />
+                          <User className="w-3 h-3 sm:w-4 sm:h-4 mr-1 flex-shrink-0" />
                           <span className="truncate">{paper.authors}</span>
                         </div>
                         <div className="flex items-center justify-between text-sm text-gray-600 mb-3">
                           <div className="flex items-center">
-                            <Calendar className="w-4 h-4 mr-1" />
+                            <Calendar className="w-3 h-3 sm:w-4 sm:h-4 mr-1" />
                             <span>{paper.year_published}</span>
                           </div>
-                        </div>
-                        <div className="flex items-center justify-between mb-4">
                           <Badge variant="outline" className="text-xs">
                             {paper.category}
                           </Badge>
                         </div>
                       </div>
 
-                      <p className="text-gray-700 text-sm mb-4 line-clamp-3">{paper.abstract}</p>
+                      <p className="text-gray-700 text-sm mb-3 sm:mb-4 line-clamp-3">{paper.abstract}</p>
 
-                      <div className="flex gap-2">
-                        <Button size="sm" onClick={() => openPaperModal(paper)} className="flex-1">
-                          <FileText className="w-4 h-4 mr-1" />
-                          Read Paper
+                      <div className="flex flex-col xs:flex-row gap-2">
+                        <Button size="sm" onClick={() => openPaperModal(paper)} className="flex-1 text-xs sm:text-sm">
+                          <FileText className="w-3 h-3 sm:w-4 sm:h-4 mr-1" />
+                          <span className="hidden xs:inline">Read Paper</span>
+                          <span className="xs:hidden">Read</span>
                         </Button>
                         <Button
                           variant="outline"
@@ -390,10 +396,11 @@ const BrowseProjectsPage = () => {
                             e.stopPropagation();
                             handleViewCitationTree(paper)
                           }}
-                          className="flex-1"
+                          className="flex-1 text-xs sm:text-sm"
                         >
-                          <GitBranch className="w-4 h-4 mr-1" />
-                          Citation Tree
+                          <GitBranch className="w-3 h-3 sm:w-4 sm:h-4 mr-1" />
+                          <span className="hidden xs:inline">Citation Tree</span>
+                          <span className="xs:hidden">Citations</span>
                         </Button>
                         <Button
                           variant="ghost"
@@ -406,13 +413,17 @@ const BrowseProjectsPage = () => {
                               addBookmark(paper.id)
                             }
                           }}
-                          className="p-1 h-auto"
+                          className="p-2 h-auto xs:w-auto w-full xs:flex-none"
+                          title={bookmarkedPapers.has(paper.id) ? "Remove bookmark" : "Add bookmark"}
                         >
                           {bookmarkedPapers.has(paper.id) ? (
                             <Bookmark className="w-4 h-4 text-blue-600 fill-current" />
                           ) : (
                             <BookmarkIcon className="w-4 h-4 text-gray-400" />
                           )}
+                          <span className="xs:hidden ml-2 text-xs">
+                            {bookmarkedPapers.has(paper.id) ? "Bookmarked" : "Bookmark"}
+                          </span>
                         </Button>
                       </div>
                     </div>
@@ -426,47 +437,51 @@ const BrowseProjectsPage = () => {
 
       {/* Modal for paper details and access request */}
       {showModal && selectedPaper && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-          <div className="bg-white rounded-lg max-w-4xl w-full max-h-[90vh] overflow-y-auto">
-            <div className="p-6">
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-3 sm:p-4">
+          <div className="bg-white rounded-lg max-w-4xl w-full max-h-[95vh] sm:max-h-[90vh] overflow-y-auto">
+            <div className="p-4 sm:p-6">
               <div className="flex justify-between items-start mb-4">
-                <h2 className="text-2xl font-bold text-gray-900 pr-4">{selectedPaper.title}</h2>
-                <button onClick={closeModal} className="text-gray-400 hover:text-gray-600 text-2xl font-bold">
+                <h2 className="text-lg sm:text-2xl font-bold text-gray-900 pr-4 leading-tight">{selectedPaper.title}</h2>
+                <button 
+                  onClick={closeModal} 
+                  className="text-gray-400 hover:text-gray-600 text-xl sm:text-2xl font-bold flex-shrink-0 p-1"
+                  aria-label="Close modal"
+                >
                   ×
                 </button>
               </div>
-              <div className="mb-4 text-gray-600 space-y-1">
-                <div className="flex items-center">
-                  <User className="w-4 h-4 mr-2" />
-                  <span>
-                    <strong>Authors:</strong> {selectedPaper.authors}
+              <div className="mb-4 text-gray-600 space-y-2">
+                <div className="flex items-start sm:items-center">
+                  <User className="w-4 h-4 mr-2 flex-shrink-0 mt-0.5 sm:mt-0" />
+                  <span className="text-sm sm:text-base">
+                    <strong>Authors:</strong> <span className="break-words">{selectedPaper.authors}</span>
                   </span>
                 </div>
                 <div className="flex items-center">
                   <Calendar className="w-4 h-4 mr-2" />
-                  <span>
+                  <span className="text-sm sm:text-base">
                     <strong>Year:</strong> {selectedPaper.year_published}
                   </span>
                 </div>
                 <div className="flex items-center">
                   <FileText className="w-4 h-4 mr-2" />
-                  <span>
+                  <span className="text-sm sm:text-base">
                     <strong>Category:</strong> {selectedPaper.category}
                   </span>
                 </div>
               </div>
               <div className="mb-6">
-                <h3 className="text-lg font-semibold text-gray-900 mb-3">Abstract</h3>
-                <p className="text-gray-700 leading-relaxed">{selectedPaper.abstract}</p>
+                <h3 className="text-base sm:text-lg font-semibold text-gray-900 mb-3">Abstract</h3>
+                <p className="text-sm sm:text-base text-gray-700 leading-relaxed">{selectedPaper.abstract}</p>
               </div>
-              <div className="flex gap-3 justify-end">
+              <div className="flex flex-col sm:flex-row gap-3 sm:justify-end">
                 {user ? (
                   requestStatus === "pending" ? (
-                    <Button className="bg-yellow-200 text-yellow-800 cursor-not-allowed" disabled>
+                    <Button className="bg-yellow-200 text-yellow-800 cursor-not-allowed text-sm sm:text-base" disabled>
                       Request Pending
                     </Button>
                   ) : requestStatus === "approved" ? (
-                    <Button asChild className="bg-green-600 hover:bg-green-700 text-white" >
+                    <Button asChild className="bg-green-600 hover:bg-green-700 text-white text-sm sm:text-base" >
                       <a href={selectedPaper.file_url} target="_blank" rel="noopener noreferrer">
                         <FileText className="w-4 h-4 mr-2" />
                         Access Granted - View Paper
@@ -474,38 +489,55 @@ const BrowseProjectsPage = () => {
                     </Button>
                   ) : (
                     <Button
-                      className="bg-blue-600 hover:bg-blue-700 text-white"
+                      className="bg-blue-600 hover:bg-blue-700 text-white text-sm sm:text-base"
                       disabled={requesting}
                       onClick={handleRequestAccess}
                     >
+                      {requesting && (
+                        <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin mr-2"></div>
+                      )}
                       <FileText className="w-4 h-4 mr-2" />
-                      Request Access to Full Paper
+                      <span className="hidden xs:inline">Request Access to Full Paper</span>
+                      <span className="xs:hidden">Request Access</span>
                     </Button>
                   )
                 ) : (
-                  <Button className="bg-gray-300 text-gray-600 cursor-not-allowed" disabled>
+                  <Button className="bg-gray-300 text-gray-600 cursor-not-allowed text-sm sm:text-base" disabled>
                     Login to Request Access
                   </Button>
                 )}
                 <Button
                   variant="outline"
                   onClick={() => handleViewCitationTree(selectedPaper)}
+                  className="text-sm sm:text-base"
                 >
                   <GitBranch className="w-4 h-4 mr-2" />
-                  Citation Tree
+                  <span className="hidden xs:inline">Citation Tree</span>
+                  <span className="xs:hidden">Citations</span>
                 </Button>
-                <Button variant="outline" onClick={() => {
-                  if (bookmarkedPapers.has(selectedPaper.id)) {
-                    removeBookmark(selectedPaper.id)
-                  } else {
-                    addBookmark(selectedPaper.id)
-                  }
-                }}>
+                <Button 
+                  variant="outline" 
+                  onClick={() => {
+                    if (bookmarkedPapers.has(selectedPaper.id)) {
+                      removeBookmark(selectedPaper.id)
+                    } else {
+                      addBookmark(selectedPaper.id)
+                    }
+                  }}
+                  className="text-sm sm:text-base"
+                  title={bookmarkedPapers.has(selectedPaper.id) ? "Remove bookmark" : "Add bookmark"}
+                >
                   {bookmarkedPapers.has(selectedPaper.id) ? (
-                    <Bookmark className="w-4 h-4 text-blue-600 fill-current" />
+                    <Bookmark className="w-4 h-4 mr-2 text-blue-600 fill-current" />
                   ) : (
-                    <BookmarkIcon className="w-4 h-4" />
+                    <BookmarkIcon className="w-4 h-4 mr-2" />
                   )}
+                  <span className="hidden xs:inline">
+                    {bookmarkedPapers.has(selectedPaper.id) ? "Bookmarked" : "Bookmark"}
+                  </span>
+                  <span className="xs:hidden">
+                    {bookmarkedPapers.has(selectedPaper.id) ? "Saved" : "Save"}
+                  </span>
                 </Button>
               </div>
             </div>

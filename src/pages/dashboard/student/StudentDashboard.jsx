@@ -227,16 +227,16 @@ const StudentDashboard = () => {
   }
 
   return (
-    <div className="p-6 space-y-6 bg-gray-50 min-h-screen">
+    <div className="space-y-4 sm:space-y-6 bg-gray-50 min-h-screen">
       {/* Welcome Header */}
-      <div className="bg-white rounded-lg p-6 shadow-sm border">
+      <div className="bg-white rounded-lg p-4 sm:p-6 shadow-sm border">
         <div className="flex items-center justify-between">
           <div>
-            <h1 className="text-2xl font-bold text-gray-900 mb-1">
-              Welcome back, {userProfile?.firstName || user?.user_metadata?.full_name || user?.email || "Student"} 👋
+            <h1 className="text-xl sm:text-2xl font-bold text-gray-900 mb-1 leading-tight">
+              Welcome back, {userProfile?.firstName || user?.user_metadata?.full_name?.split(' ')[0] || user?.email?.split('@')[0] || "Student"} 👋
               {isResearchProponent && <span className="ml-2 text-lg">🔬</span>}
             </h1>
-            <p className="text-gray-600">
+            <p className="text-sm sm:text-base text-gray-600">
               {isResearchProponent 
                 ? "Discover research papers and manage your research projects" 
                 : "Discover and explore research papers"}
@@ -246,18 +246,18 @@ const StudentDashboard = () => {
       </div>
 
       {/* Student Stats Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+      <div className="grid grid-cols-2 md:grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-6">
         {studentStats.map((stat, index) => {
           const Icon = stat.icon
           return (
             <Card key={index} className="hover:shadow-md transition-shadow duration-200">
-              <CardContent className="p-6">
+              <CardContent className="p-3 sm:p-6">
                 <div className="flex items-center justify-between">
-                  <div>
-                    <p className="text-sm font-medium text-gray-600 mb-1">{stat.title}</p>
-                    <p className="text-2xl font-bold text-gray-900">{stat.value}</p>
+                  <div className="flex-1 min-w-0">
+                    <p className="text-xs sm:text-sm font-medium text-gray-600 mb-1 truncate">{stat.title}</p>
+                    <p className="text-lg sm:text-2xl font-bold text-gray-900">{stat.value}</p>
                     <p
-                      className={`text-sm mt-1 ${
+                      className={`text-xs sm:text-sm mt-1 truncate ${
                         stat.changeType === "positive"
                           ? "text-green-600"
                           : stat.changeType === "negative"
@@ -268,8 +268,8 @@ const StudentDashboard = () => {
                       {stat.change}
                     </p>
                   </div>
-                  <div className="w-12 h-12 bg-blue-50 rounded-lg flex items-center justify-center">
-                    <Icon className="w-6 h-6 text-blue-600" />
+                  <div className="w-8 h-8 sm:w-12 sm:h-12 bg-blue-50 rounded-lg flex items-center justify-center flex-shrink-0 ml-2">
+                    <Icon className="w-4 h-4 sm:w-6 sm:h-6 text-blue-600" />
                   </div>
                 </div>
               </CardContent>
@@ -280,50 +280,51 @@ const StudentDashboard = () => {
 
       {/* Recent Papers Section */}
       <Card>
-        <CardHeader>
+        <CardHeader className="p-4 sm:p-6">
           <div className="flex items-center justify-between">
-            <CardTitle className="text-lg font-semibold">
+            <CardTitle className="text-base sm:text-lg font-semibold">
               {recentBookmarkedPapers.length > 0 ? "Recently Bookmarked Papers" : "Recent Papers"}
             </CardTitle>
-            <Button variant="outline" size="sm" onClick={() => navigate("/student/browse")}>
-              <FileText className="w-4 h-4 mr-2" />
-              Browse All
+            <Button variant="outline" size="sm" onClick={() => navigate("/student/browse")} className="text-xs sm:text-sm">
+              <FileText className="w-3 h-3 sm:w-4 sm:h-4 mr-1 sm:mr-2" />
+              <span className="hidden xs:inline">Browse All</span>
+              <span className="xs:hidden">Browse</span>
             </Button>
           </div>
         </CardHeader>
-        <CardContent>
+        <CardContent className="p-4 sm:p-6">
           {loading ? (
             <div className="text-center py-8 text-gray-600">Loading recent papers...</div>
           ) : displayPapers.length > 0 ? (
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6">
               {displayPapers.map((paper) => (
                 <div
                   key={paper.id || paper.bookmark_id}
-                  className="bg-white border rounded-lg p-4 hover:shadow-md transition-all duration-200 cursor-pointer"
+                  className="bg-white border rounded-lg p-3 sm:p-4 hover:shadow-md transition-all duration-200 cursor-pointer"
                   onClick={() => handlePaperClick(paper)}
                 >
                   <div className="flex items-start justify-between mb-3">
-                    <h3 className="font-semibold text-gray-900 text-sm leading-tight line-clamp-2">{paper.title}</h3>
+                    <h3 className="font-semibold text-gray-900 text-sm leading-tight line-clamp-2 flex-1 pr-2">{paper.title}</h3>
                     <Button
                       variant="ghost"
                       size="sm"
-                      className="p-1 h-auto"
+                      className="p-1 h-auto flex-shrink-0"
                       onClick={(e) => {
                         e.stopPropagation()
                         toggleBookmark(paper.id)
                       }}
                     >
                       <Bookmark
-                        className={`w-4 h-4 ${paper.isBookmarked ? "fill-blue-600 text-blue-600" : "text-gray-400"}`}
+                        className={`w-3 h-3 sm:w-4 sm:h-4 ${paper.isBookmarked ? "fill-blue-600 text-blue-600" : "text-gray-400"}`}
                       />
                     </Button>
                   </div>
-                  <p className="text-xs text-gray-600 mb-2">By {paper.authors}</p>
+                  <p className="text-xs text-gray-600 mb-2 line-clamp-1">By {paper.authors}</p>
                   <div className="flex items-center justify-between text-xs text-gray-500">
-                    <span>
+                    <span className="truncate flex-1 pr-2">
                       {paper.category} • {paper.year_published || paper.year}
                     </span>
-                    <div className="flex items-center">
+                    <div className="flex items-center flex-shrink-0">
                       <Eye className="w-3 h-3 mr-1" />
                       {paper.views || 0}
                     </div>
@@ -352,10 +353,10 @@ const StudentDashboard = () => {
             </div>
           ) : (
             <div className="text-center py-8">
-              <BookOpen className="w-12 h-12 text-gray-400 mx-auto mb-4" />
-              <h3 className="text-lg font-medium text-gray-900 mb-2">No bookmarked papers yet</h3>
-              <p className="text-gray-600 mb-4">Start exploring and bookmark papers you're interested in</p>
-              <Button onClick={() => navigate("/student/browse")}>
+              <BookOpen className="w-8 h-8 sm:w-12 sm:h-12 text-gray-400 mx-auto mb-4" />
+              <h3 className="text-base sm:text-lg font-medium text-gray-900 mb-2">No bookmarked papers yet</h3>
+              <p className="text-sm sm:text-base text-gray-600 mb-4 px-2">Start exploring and bookmark papers you're interested in</p>
+              <Button onClick={() => navigate("/student/browse")} size="sm" className="text-sm">
                 <Search className="w-4 h-4 mr-2" />
                 Browse Research Papers
               </Button>
@@ -366,48 +367,55 @@ const StudentDashboard = () => {
 
       {/* Quick Actions */}
       <Card>
-        <CardHeader>
-          <CardTitle className="text-lg font-semibold">Quick Actions</CardTitle>
+        <CardHeader className="p-4 sm:p-6">
+          <CardTitle className="text-base sm:text-lg font-semibold">Quick Actions</CardTitle>
         </CardHeader>
-        <CardContent>
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-            <Button className="h-12 justify-start bg-transparent" variant="outline" onClick={() => navigate("/student/bookmarks") }>
-              <Bookmark className="w-4 h-4 mr-2" />
-              My Bookmarks
+        <CardContent className="p-4 sm:p-6">
+          <div className="grid grid-cols-2 sm:grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
+            <Button className="h-10 sm:h-12 justify-start bg-transparent text-xs sm:text-sm" variant="outline" onClick={() => navigate("/student/bookmarks") }>
+              <Bookmark className="w-3 h-3 sm:w-4 sm:h-4 mr-1 sm:mr-2" />
+              <span className="hidden xs:inline">My Bookmarks</span>
+              <span className="xs:hidden">Bookmarks</span>
             </Button>
-            <Button className="h-12 justify-start bg-transparent" variant="outline" onClick={() => navigate("/student/browse") }>
-              <Search className="w-4 h-4 mr-2" />
-              Browse Research
+            <Button className="h-10 sm:h-12 justify-start bg-transparent text-xs sm:text-sm" variant="outline" onClick={() => navigate("/student/browse") }>
+              <Search className="w-3 h-3 sm:w-4 sm:h-4 mr-1 sm:mr-2" />
+              <span className="hidden xs:inline">Browse Research</span>
+              <span className="xs:hidden">Browse</span>
             </Button>
-            <Button className="h-12 justify-start bg-transparent" variant="outline" onClick={() => navigate("/student/guidelines") }>
-              <BookOpen className="w-4 h-4 mr-2" />
-              Research Guidelines
+            <Button className="h-10 sm:h-12 justify-start bg-transparent text-xs sm:text-sm" variant="outline" onClick={() => navigate("/student/guidelines") }>
+              <BookOpen className="w-3 h-3 sm:w-4 sm:h-4 mr-1 sm:mr-2" />
+              <span className="hidden xs:inline">Guidelines</span>
+              <span className="xs:hidden">Guide</span>
             </Button>
-            <Button className="h-12 justify-start bg-transparent" variant="outline" onClick={() => navigate("/student/settings") }>
-              <User className="w-4 h-4 mr-2" />
-              Profile Settings
+            <Button className="h-10 sm:h-12 justify-start bg-transparent text-xs sm:text-sm" variant="outline" onClick={() => navigate("/student/settings") }>
+              <User className="w-3 h-3 sm:w-4 sm:h-4 mr-1 sm:mr-2" />
+              <span className="hidden xs:inline">Profile Settings</span>
+              <span className="xs:hidden">Profile</span>
             </Button>
           </div>
           
           {/* Research Proponent Actions */}
           {isResearchProponent && (
-            <div className="mt-6 pt-6 border-t border-gray-200">
-              <h3 className="text-sm font-semibold text-gray-700 mb-4 flex items-center gap-2">
+            <div className="mt-4 sm:mt-6 pt-4 sm:pt-6 border-t border-gray-200">
+              <h3 className="text-sm font-semibold text-gray-700 mb-3 sm:mb-4 flex items-center gap-2">
                 <FlaskConical className="w-4 h-4 text-blue-600" />
                 Research Proponent Actions
               </h3>
-              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-                <Button className="h-12 justify-start bg-blue-50 border-blue-200 text-blue-700 hover:bg-blue-100" variant="outline" onClick={() => navigate("/student/research/projects")}>
-                  <FlaskConical className="w-4 h-4 mr-2" />
-                  My Research Projects
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-4">
+                <Button className="h-10 sm:h-12 justify-start bg-blue-50 border-blue-200 text-blue-700 hover:bg-blue-100 text-xs sm:text-sm" variant="outline" onClick={() => navigate("/student/research/projects")}>
+                  <FlaskConical className="w-3 h-3 sm:w-4 sm:h-4 mr-1 sm:mr-2" />
+                  <span className="hidden xs:inline">My Research Projects</span>
+                  <span className="xs:hidden">Projects</span>
                 </Button>
-                <Button className="h-12 justify-start bg-green-50 border-green-200 text-green-700 hover:bg-green-100" variant="outline" onClick={() => navigate("/student/research/submit")}>
-                  <Upload className="w-4 h-4 mr-2" />
-                  Submit Research
+                <Button className="h-10 sm:h-12 justify-start bg-green-50 border-green-200 text-green-700 hover:bg-green-100 text-xs sm:text-sm" variant="outline" onClick={() => navigate("/student/research/submit")}>
+                  <Upload className="w-3 h-3 sm:w-4 sm:h-4 mr-1 sm:mr-2" />
+                  <span className="hidden xs:inline">Submit Research</span>
+                  <span className="xs:hidden">Submit</span>
                 </Button>
-                <Button className="h-12 justify-start bg-orange-50 border-orange-200 text-orange-700 hover:bg-orange-100" variant="outline" onClick={() => navigate("/student/research/proposals")}>
-                  <Lightbulb className="w-4 h-4 mr-2" />
-                  Research Proposals
+                <Button className="h-10 sm:h-12 justify-start bg-orange-50 border-orange-200 text-orange-700 hover:bg-orange-100 text-xs sm:text-sm" variant="outline" onClick={() => navigate("/student/research/proposals")}>
+                  <Lightbulb className="w-3 h-3 sm:w-4 sm:h-4 mr-1 sm:mr-2" />
+                  <span className="hidden xs:inline">Research Proposals</span>
+                  <span className="xs:hidden">Proposals</span>
                 </Button>
               </div>
             </div>
@@ -417,34 +425,34 @@ const StudentDashboard = () => {
 
       {/* Announcements */}
       <Card>
-        <CardHeader>
-          <CardTitle className="text-lg font-semibold flex items-center">
-            <Bell className="w-5 h-5 mr-2" />
+        <CardHeader className="p-4 sm:p-6">
+          <CardTitle className="text-base sm:text-lg font-semibold flex items-center">
+            <Bell className="w-4 h-4 sm:w-5 sm:h-5 mr-2" />
             Latest Announcements
           </CardTitle>
         </CardHeader>
-        <CardContent>
+        <CardContent className="p-4 sm:p-6">
           {loading ? (
             <div className="text-center py-8 text-gray-600">Loading announcements...</div>
           ) : announcements.length > 0 ? (
-            <div className="space-y-4">
+            <div className="space-y-3 sm:space-y-4">
               {announcements.map((announcement) => (
-                <div key={announcement.id} className="border-l-4 border-blue-500 pl-4 py-2">
-                  <div className="flex items-center justify-between mb-1">
-                    <h4 className="font-medium text-gray-900">{announcement.title}</h4>
-                    <Badge className={getPriorityColor(announcement.priority)}>
+                <div key={announcement.id} className="border-l-4 border-blue-500 pl-3 sm:pl-4 py-2">
+                  <div className="flex items-start justify-between mb-1 gap-2">
+                    <h4 className="font-medium text-gray-900 text-sm sm:text-base flex-1 line-clamp-2">{announcement.title}</h4>
+                    <Badge className={`${getPriorityColor(announcement.priority)} text-xs flex-shrink-0`}>
                       {announcement.priority}
                     </Badge>
                   </div>
-                  <p className="text-sm text-gray-600 mb-1">{announcement.content}</p>
-                  <div className="flex items-center justify-between text-xs text-gray-500">
+                  <p className="text-xs sm:text-sm text-gray-600 mb-2 line-clamp-3">{announcement.content}</p>
+                  <div className="flex flex-col xs:flex-row xs:items-center xs:justify-between gap-1 xs:gap-0 text-xs text-gray-500">
                     <div className="flex items-center">
                       <Calendar className="w-3 h-3 mr-1" />
                       {new Date(announcement.created_at).toLocaleDateString()}
                     </div>
                     <div className="flex items-center">
                       <User className="w-3 h-3 mr-1" />
-                      {announcement.author}
+                      <span className="truncate">{announcement.author}</span>
                     </div>
                   </div>
                   {announcement.expiration_date && (
@@ -457,9 +465,9 @@ const StudentDashboard = () => {
             </div>
           ) : (
             <div className="text-center py-8">
-              <Bell className="w-12 h-12 text-gray-400 mx-auto mb-4" />
-              <h3 className="text-lg font-medium text-gray-900 mb-2">No announcements</h3>
-              <p className="text-gray-600">There are no active announcements at this time.</p>
+              <Bell className="w-8 h-8 sm:w-12 sm:h-12 text-gray-400 mx-auto mb-4" />
+              <h3 className="text-base sm:text-lg font-medium text-gray-900 mb-2">No announcements</h3>
+              <p className="text-sm sm:text-base text-gray-600 px-2">There are no active announcements at this time.</p>
             </div>
           )}
         </CardContent>
@@ -467,25 +475,25 @@ const StudentDashboard = () => {
 
       {/* Paper Detail Modal */}
       {showModal && selectedPaper && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-          <div className="bg-white rounded-lg max-w-2xl w-full max-h-[80vh] overflow-y-auto">
-            <div className="p-6">
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-3 sm:p-4">
+          <div className="bg-white rounded-lg max-w-2xl w-full max-h-[90vh] sm:max-h-[80vh] overflow-y-auto">
+            <div className="p-4 sm:p-6">
               <div className="flex items-start justify-between mb-4">
-                <h2 className="text-xl font-bold text-gray-900 pr-4">{selectedPaper.title}</h2>
+                <h2 className="text-lg sm:text-xl font-bold text-gray-900 pr-4 leading-tight">{selectedPaper.title}</h2>
                 <Button
                   variant="ghost"
                   size="sm"
                   onClick={() => setShowModal(false)}
-                  className="text-gray-500 hover:text-gray-700"
+                  className="text-gray-500 hover:text-gray-700 flex-shrink-0"
                 >
                   ✕
                 </Button>
               </div>
-              <div className="mb-4">
-                <p className="text-sm text-gray-600 mb-2">
-                  <strong>Authors:</strong> {selectedPaper.authors}
+              <div className="mb-4 space-y-2">
+                <p className="text-sm text-gray-600">
+                  <strong>Authors:</strong> <span className="break-words">{selectedPaper.authors}</span>
                 </p>
-                <p className="text-sm text-gray-600 mb-2">
+                <p className="text-sm text-gray-600">
                   <strong>Category:</strong> {selectedPaper.category} • <strong>Year:</strong> {selectedPaper.year}
                 </p>
                 <div className="flex items-center text-sm text-gray-600">
@@ -495,11 +503,11 @@ const StudentDashboard = () => {
               </div>
               <div className="mb-6">
                 <h3 className="font-semibold text-gray-900 mb-2">Abstract</h3>
-                <p className="text-gray-700 leading-relaxed">{selectedPaper.abstract}</p>
+                <p className="text-sm sm:text-base text-gray-700 leading-relaxed">{selectedPaper.abstract}</p>
               </div>
-              <div className="flex items-center space-x-3">
-                <Button className="flex-1">Request Full Access</Button>
-                <Button variant="outline" onClick={() => toggleBookmark(selectedPaper.id)}>
+              <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3">
+                <Button className="flex-1 text-sm sm:text-base">Request Full Access</Button>
+                <Button variant="outline" onClick={() => toggleBookmark(selectedPaper.id)} className="text-sm sm:text-base">
                   <Bookmark className={`w-4 h-4 mr-2 ${selectedPaper.isBookmarked ? "fill-current" : ""}`} />
                   {selectedPaper.isBookmarked ? "Bookmarked" : "Bookmark"}
                 </Button>
