@@ -43,39 +43,51 @@ const Toast = ({ message, type, onClose, duration = 5000 }) => {
     }
   };
 
+  // Check if screen is mobile (below 640px)
+  const isMobile = typeof window !== 'undefined' && window.innerWidth < 640;
+
   return (
     <div
       className={`toast ${type} ${isVisible ? 'show' : ''}`}
       style={{
         position: 'fixed',
-        top: '20px',
-        right: '20px',
+        top: isMobile ? '12px' : '20px',
+        right: isMobile ? '12px' : '20px',
+        left: isMobile ? '12px' : 'auto',
         background: 'white',
         color: '#333',
-        padding: '16px 24px',
+        padding: isMobile ? '12px 16px' : '16px 24px',
         borderRadius: '8px',
         boxShadow: '0 4px 12px rgba(0, 0, 0, 0.15)',
         zIndex: 9999,
         borderLeft: `4px solid ${getColor()}`,
         display: 'flex',
         alignItems: 'center',
-        minWidth: '300px',
-        maxWidth: '500px',
+        minWidth: isMobile ? 'auto' : '300px',
+        maxWidth: isMobile ? 'calc(100vw - 24px)' : '500px',
         transform: isVisible ? 'translateX(0)' : 'translateX(120%)',
         transition: 'transform 0.3s ease-in-out',
       }}
     >
       <span
         style={{
-          marginRight: '12px',
+          marginRight: isMobile ? '8px' : '12px',
           color: getColor(),
-          fontSize: '18px',
+          fontSize: isMobile ? '16px' : '18px',
           fontWeight: 'bold',
+          flexShrink: 0,
         }}
       >
         {getIcon()}
       </span>
-      <span style={{ flexGrow: 1, fontSize: '14px' }}>{message}</span>
+      <span style={{ 
+        flexGrow: 1, 
+        fontSize: isMobile ? '13px' : '14px',
+        lineHeight: '1.4',
+        wordBreak: 'break-word'
+      }}>
+        {message}
+      </span>
       <button
         onClick={() => {
           setIsVisible(false);
@@ -86,9 +98,16 @@ const Toast = ({ message, type, onClose, duration = 5000 }) => {
           border: 'none',
           color: '#666',
           cursor: 'pointer',
-          fontSize: '18px',
-          padding: '0',
-          marginLeft: '12px',
+          fontSize: isMobile ? '16px' : '18px',
+          padding: isMobile ? '4px' : '0',
+          marginLeft: isMobile ? '8px' : '12px',
+          flexShrink: 0,
+          borderRadius: '4px',
+          minWidth: isMobile ? '24px' : 'auto',
+          minHeight: isMobile ? '24px' : 'auto',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center'
         }}
       >
         ×
