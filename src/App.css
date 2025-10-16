@@ -435,6 +435,48 @@ main {
     color: #333333 !important;
   }
 
+  /* Force light mode for Bootstrap cards in browse topics */
+  .explore-section .card {
+    background-color: #ffffff !important;
+    color: #333333 !important;
+    border: 1px solid #dee2e6 !important;
+  }
+
+  .dark .explore-section .card {
+    background-color: #ffffff !important;
+    color: #333333 !important;
+    border: 1px solid #dee2e6 !important;
+  }
+
+  .explore-section .card-body {
+    background-color: #ffffff !important;
+    color: #333333 !important;
+  }
+
+  .dark .explore-section .card-body {
+    background-color: #ffffff !important;
+    color: #333333 !important;
+  }
+
+  /* Force paper card specific styling */
+  .explore-section .paper-card {
+    background-color: #ffffff !important;
+  }
+
+  .dark .explore-section .paper-card {
+    background-color: #ffffff !important;
+  }
+
+  .explore-section .paper-card .card {
+    background-color: #ffffff !important;
+    color: #333333 !important;
+  }
+
+  .dark .explore-section .paper-card .card {
+    background-color: #ffffff !important;
+    color: #333333 !important;
+  }
+
   /* Force light mode for paper content within browse topics */
   .explore-section .paper-title,
   .explore-section .paper-authors,
@@ -452,6 +494,36 @@ main {
   .dark .explore-section span,
   .dark .explore-section div {
     color: #333333 !important;
+  }
+
+  /* Force card text elements to be dark */
+  .explore-section .card-title {
+    color: #245884 !important;
+  }
+
+  .dark .explore-section .card-title {
+    color: #245884 !important;
+  }
+
+  .explore-section .text-muted {
+    color: #6c757d !important;
+  }
+
+  .dark .explore-section .text-muted {
+    color: #6c757d !important;
+  }
+
+  /* Force navigation buttons to be light */
+  .explore-section .carousel-nav-btn {
+    background-color: #ffffff !important;
+    color: #333333 !important;
+    border: 1px solid #dee2e6 !important;
+  }
+
+  .dark .explore-section .carousel-nav-btn {
+    background-color: #ffffff !important;
+    color: #333333 !important;
+    border: 1px solid #dee2e6 !important;
   }
 
   .header-container {
