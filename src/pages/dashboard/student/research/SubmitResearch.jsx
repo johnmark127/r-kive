@@ -265,21 +265,21 @@ const SubmitResearch = () => {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50 p-6">
+    <div className="min-h-screen bg-gray-50 p-3 sm:p-6">
       {/* Header */}
-      <div className="bg-white rounded-lg p-6 shadow-sm border mb-6">
-        <div className="flex items-center justify-between">
-          <div>
-            <h1 className="text-2xl font-bold text-gray-900 mb-1 flex items-center gap-2">
-              <Upload className="h-6 w-6 text-blue-600" />
-              Submit Research Project 📝
+      <div className="bg-white rounded-lg p-4 sm:p-6 shadow-sm border mb-4 sm:mb-6">
+        <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+          <div className="flex-1">
+            <h1 className="text-lg sm:text-2xl font-bold text-gray-900 mb-1 flex items-center gap-2">
+              <Upload className="h-5 w-5 sm:h-6 sm:w-6 text-blue-600 flex-shrink-0" />
+              <span className="line-clamp-1">Submit Research Project 📝</span>
             </h1>
-            <p className="text-gray-600">Propose a new research project for review and approval</p>
+            <p className="text-sm sm:text-base text-gray-600">Propose a new research project for review and approval</p>
           </div>
           {currentUser && (
-            <div className="text-right">
-              <p className="text-sm text-gray-600">Submitting as:</p>
-              <p className="text-sm font-medium text-gray-900">{currentUser.email}</p>
+            <div className="text-left sm:text-right">
+              <p className="text-xs sm:text-sm text-gray-600">Submitting as:</p>
+              <p className="text-xs sm:text-sm font-medium text-gray-900 truncate">{currentUser.email}</p>
             </div>
           )}
         </div>
@@ -287,25 +287,25 @@ const SubmitResearch = () => {
 
       {/* Authentication Check */}
       {!currentUser ? (
-        <Card className="mb-6">
-          <CardContent className="p-8 text-center">
-            <AlertCircle className="h-12 w-12 text-red-500 mx-auto mb-4" />
-            <h3 className="text-lg font-semibold text-gray-900 mb-2">Authentication Required</h3>
-            <p className="text-gray-600">Please log in to submit a research proposal.</p>
+        <Card className="mb-4 sm:mb-6">
+          <CardContent className="p-4 sm:p-8 text-center">
+            <AlertCircle className="h-8 w-8 sm:h-12 sm:w-12 text-red-500 mx-auto mb-3 sm:mb-4" />
+            <h3 className="text-base sm:text-lg font-semibold text-gray-900 mb-2">Authentication Required</h3>
+            <p className="text-sm sm:text-base text-gray-600">Please log in to submit a research proposal.</p>
           </CardContent>
         </Card>
       ) : (
         <>
           {/* Submission Guidelines */}
-          <Card className="mb-6 border-blue-200 bg-blue-50">
-            <CardHeader>
-              <CardTitle className="text-lg font-semibold text-blue-900 flex items-center gap-2">
-                <AlertCircle className="h-5 w-5" />
-                Submission Guidelines
+          <Card className="mb-4 sm:mb-6 border-blue-200 bg-blue-50">
+            <CardHeader className="p-4 sm:p-6">
+              <CardTitle className="text-base sm:text-lg font-semibold text-blue-900 flex items-center gap-2">
+                <AlertCircle className="h-4 w-4 sm:h-5 sm:w-5 flex-shrink-0" />
+                <span>Submission Guidelines</span>
               </CardTitle>
             </CardHeader>
-            <CardContent className="text-sm text-blue-800">
-              <ul className="space-y-2">
+            <CardContent className="text-xs sm:text-sm text-blue-800 px-4 pb-4 sm:px-6 sm:pb-6">
+              <ul className="space-y-1.5 sm:space-y-2">
                 <li>• Ensure your research proposal is original and not previously submitted</li>
                 <li>• Provide a clear and detailed description of your research objectives</li>
                 <li>• Select the most appropriate category for your research</li>
@@ -317,13 +317,13 @@ const SubmitResearch = () => {
 
       {/* Submission Form */}
       <Card>
-        <CardHeader>
-          <CardTitle className="text-lg font-semibold">Research Project Details</CardTitle>
+        <CardHeader className="p-4 sm:p-6">
+          <CardTitle className="text-base sm:text-lg font-semibold">Research Project Details</CardTitle>
         </CardHeader>
-        <CardContent>
-          <form onSubmit={handleSubmit} className="space-y-6">
+        <CardContent className="p-4 sm:p-6">
+          <form onSubmit={handleSubmit} className="space-y-4 sm:space-y-6">
             {/* Basic Information */}
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 sm:gap-6">
               <div className="lg:col-span-2">
                 <label htmlFor="title" className="block text-sm font-medium text-gray-700 mb-2">
                   Research Title *
@@ -350,8 +350,8 @@ const SubmitResearch = () => {
                   onChange={handleInputChange}
                   placeholder="Provide a detailed description of your research project, objectives, methodology, and expected outcomes..."
                   required
-                  rows={6}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent resize-none"
+                  rows={4}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent resize-none text-sm sm:text-base"
                 />
               </div>
 
@@ -365,7 +365,7 @@ const SubmitResearch = () => {
                   value={formData.category}
                   onChange={handleInputChange}
                   required
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent text-sm sm:text-base"
                 >
                   <option value="">Select a category</option>
                   {categories.map((category) => (
@@ -386,7 +386,7 @@ const SubmitResearch = () => {
                   value={formData.researchTopic}
                   onChange={handleInputChange}
                   required
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent text-sm sm:text-base"
                 >
                   <option value="">Select a research topic</option>
                   {researchTopics.map((topic) => (
@@ -403,8 +403,8 @@ const SubmitResearch = () => {
               <label htmlFor="documents" className="block text-sm font-medium text-gray-700 mb-2">
                 Supporting Documents
               </label>
-              <div className="border-2 border-dashed border-gray-300 rounded-lg p-6 text-center hover:border-gray-400 transition-colors">
-                <Upload className="h-8 w-8 text-gray-400 mx-auto mb-2" />
+              <div className="border-2 border-dashed border-gray-300 rounded-lg p-4 sm:p-6 text-center hover:border-gray-400 transition-colors">
+                <Upload className="h-6 w-6 sm:h-8 sm:w-8 text-gray-400 mx-auto mb-2" />
                 <input
                   id="documents"
                   type="file"
@@ -415,20 +415,20 @@ const SubmitResearch = () => {
                 />
                 <label
                   htmlFor="documents"
-                  className="cursor-pointer text-sm text-gray-600 hover:text-gray-800"
+                  className="cursor-pointer text-xs sm:text-sm text-gray-600 hover:text-gray-800 block"
                 >
-                  Click to upload research proposal, references, or other supporting documents
-                  <br />
-                  <span className="text-xs text-gray-500">PDF, DOC, DOCX, TXT files up to 10MB each</span>
+                  <span className="block">Click to upload research proposal, references,</span>
+                  <span className="block">or other supporting documents</span>
+                  <span className="text-xs text-gray-500 mt-1 block">PDF, DOC, DOCX, TXT files up to 10MB each</span>
                 </label>
                 {formData.documents.length > 0 && (
-                  <div className="mt-4">
-                    <p className="text-sm font-medium text-gray-700 mb-2">Selected files:</p>
-                    <ul className="text-sm text-gray-600">
+                  <div className="mt-3 sm:mt-4">
+                    <p className="text-xs sm:text-sm font-medium text-gray-700 mb-2">Selected files:</p>
+                    <ul className="text-xs sm:text-sm text-gray-600 space-y-1">
                       {formData.documents.map((file, index) => (
-                        <li key={index} className="flex items-center gap-2">
-                          <FileText className="h-4 w-4" />
-                          {file.name}
+                        <li key={index} className="flex items-center gap-2 justify-center">
+                          <FileText className="h-3 w-3 sm:h-4 sm:w-4 flex-shrink-0" />
+                          <span className="truncate max-w-[200px] sm:max-w-none">{file.name}</span>
                         </li>
                       ))}
                     </ul>
@@ -439,23 +439,23 @@ const SubmitResearch = () => {
 
             {/* Error/Success Messages */}
             {submitError && (
-              <div className="p-4 bg-red-50 border border-red-200 rounded-md">
-                <div className="flex items-center gap-2">
-                  <AlertCircle className="h-4 w-4 text-red-600" />
-                  <p className="text-sm text-red-600">{submitError}</p>
+              <div className="p-3 sm:p-4 bg-red-50 border border-red-200 rounded-md">
+                <div className="flex items-start gap-2">
+                  <AlertCircle className="h-4 w-4 text-red-600 flex-shrink-0 mt-0.5" />
+                  <p className="text-xs sm:text-sm text-red-600 leading-relaxed">{submitError}</p>
                 </div>
               </div>
             )}
 
             {submitSuccess && (
-              <div className="p-4 bg-green-50 border border-green-200 rounded-md">
-                <div className="flex items-center gap-2 mb-2">
-                  <CheckCircle className="h-4 w-4 text-green-600" />
-                  <p className="text-sm text-green-600 font-medium">
+              <div className="p-3 sm:p-4 bg-green-50 border border-green-200 rounded-md">
+                <div className="flex items-start gap-2 mb-2">
+                  <CheckCircle className="h-4 w-4 text-green-600 flex-shrink-0 mt-0.5" />
+                  <p className="text-xs sm:text-sm text-green-600 font-medium">
                     Research project submitted successfully!
                   </p>
                 </div>
-                <p className="text-xs text-green-500">
+                <p className="text-xs text-green-500 ml-6">
                   Your submission will be reviewed by the research committee. You'll receive an email notification about the status.
                 </p>
               </div>
@@ -463,10 +463,10 @@ const SubmitResearch = () => {
 
             {/* Upload Progress */}
             {isSubmitting && uploadProgress > 0 && (
-              <div className="p-4 bg-blue-50 border border-blue-200 rounded-md">
+              <div className="p-3 sm:p-4 bg-blue-50 border border-blue-200 rounded-md">
                 <div className="flex items-center gap-2 mb-2">
-                  <Upload className="h-4 w-4 text-blue-600" />
-                  <p className="text-sm text-blue-600 font-medium">
+                  <Upload className="h-4 w-4 text-blue-600 flex-shrink-0" />
+                  <p className="text-xs sm:text-sm text-blue-600 font-medium">
                     Uploading files... {uploadProgress}%
                   </p>
                 </div>
@@ -480,22 +480,29 @@ const SubmitResearch = () => {
             )}
 
             {/* Submit Button */}
-            <div className="flex justify-end gap-4 pt-6 border-t">
-              <Button type="button" variant="outline" disabled={isSubmitting}>
-                Save as Draft
+            <div className="flex flex-col sm:flex-row justify-end gap-3 sm:gap-4 pt-4 sm:pt-6 border-t">
+              <Button 
+                type="button" 
+                variant="outline" 
+                disabled={isSubmitting}
+                className="w-full sm:w-auto order-2 sm:order-1"
+              >
+                <span className="sm:inline">Save as Draft</span>
               </Button>
               <Button
                 type="submit"
                 disabled={isSubmitting || !currentUser}
-                className="bg-blue-600 hover:bg-blue-700 disabled:opacity-50"
+                className="bg-blue-600 hover:bg-blue-700 disabled:opacity-50 w-full sm:w-auto order-1 sm:order-2"
               >
                 {isSubmitting ? (
-                  <div className="flex items-center gap-2">
+                  <div className="flex items-center justify-center gap-2">
                     <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
-                    {uploadProgress > 0 ? "Uploading..." : "Submitting..."}
+                    <span className="text-sm sm:text-base">
+                      {uploadProgress > 0 ? "Uploading..." : "Submitting..."}
+                    </span>
                   </div>
                 ) : (
-                  "Submit Research Project"
+                  <span className="text-sm sm:text-base">Submit Research Project</span>
                 )}
               </Button>
             </div>

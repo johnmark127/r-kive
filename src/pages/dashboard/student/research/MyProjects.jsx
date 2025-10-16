@@ -1376,55 +1376,59 @@ const ResearchHub = () => {
   )
 
   return (
-    <div className="min-h-screen bg-gray-50 p-6">
+    <div className="min-h-screen bg-gray-50 p-3 sm:p-6">
       {/* Header */}
-      <div className="bg-white rounded-lg p-6 shadow-sm border mb-6">
-        <div className="flex items-center justify-between">
-          <div>
-            <h1 className="text-2xl font-bold text-gray-900 mb-1 flex items-center gap-2">
-              <FlaskConical className="h-6 w-6 text-blue-600" />
-              Research Hub 🔬
+      <div className="bg-white rounded-lg p-4 sm:p-6 shadow-sm border mb-4 sm:mb-6">
+        <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+          <div className="flex-1">
+            <h1 className="text-xl sm:text-2xl font-bold text-gray-900 mb-1 flex items-center gap-2">
+              <FlaskConical className="h-5 w-5 sm:h-6 sm:w-6 text-blue-600 flex-shrink-0" />
+              <span className="line-clamp-1">Research Hub 🔬</span>
             </h1>
-            <p className="text-gray-600">Complete research management - projects, proposals & progress tracking</p>
+            <p className="text-sm sm:text-base text-gray-600 line-clamp-2">Complete research management - projects, proposals & progress tracking</p>
           </div>
-          {activeTab === "proposals" && (
-            <Button 
-              className="bg-yellow-600 hover:bg-yellow-700"
-              onClick={() => setNewProposalDialogOpen(true)}
-            >
-              <Plus className="h-4 w-4 mr-2" />
-              New Proposal
-            </Button>
-          )}
-          {activeTab === "projects" && (
-            <Button 
-              className="bg-blue-600 hover:bg-blue-700"
-              onClick={() => setNewProjectDialogOpen(true)}
-            >
-              <Plus className="h-4 w-4 mr-2" />
-              New Project
-            </Button>
-          )}
+          <div className="flex gap-2">
+            {activeTab === "proposals" && (
+              <Button 
+                className="bg-yellow-600 hover:bg-yellow-700 flex-1 sm:flex-none text-sm"
+                onClick={() => setNewProposalDialogOpen(true)}
+              >
+                <Plus className="h-3 w-3 sm:h-4 sm:w-4 mr-1 sm:mr-2" />
+                <span className="sm:hidden">Proposal</span>
+                <span className="hidden sm:inline">New Proposal</span>
+              </Button>
+            )}
+            {activeTab === "projects" && (
+              <Button 
+                className="bg-blue-600 hover:bg-blue-700 flex-1 sm:flex-none text-sm"
+                onClick={() => setNewProjectDialogOpen(true)}
+              >
+                <Plus className="h-3 w-3 sm:h-4 sm:w-4 mr-1 sm:mr-2" />
+                <span className="sm:hidden">Project</span>
+                <span className="hidden sm:inline">New Project</span>
+              </Button>
+            )}
+          </div>
         </div>
       </div>
 
       {/* Tab Navigation */}
-      <div className="bg-white rounded-lg shadow-sm border mb-6">
-        <div className="flex border-b">
+      <div className="bg-white rounded-lg shadow-sm border mb-4 sm:mb-6">
+        <div className="flex border-b overflow-x-auto">
           {tabs.map((tab) => {
             const Icon = tab.icon
             return (
               <button
                 key={tab.id}
                 onClick={() => setActiveTab(tab.id)}
-                className={`flex items-center gap-2 px-6 py-4 font-medium transition-colors border-b-2 ${
+                className={`flex items-center gap-1 sm:gap-2 px-3 sm:px-6 py-3 sm:py-4 font-medium transition-colors border-b-2 text-sm sm:text-base whitespace-nowrap ${
                   activeTab === tab.id
                     ? `border-blue-500 ${tab.color} bg-blue-50`
                     : "border-transparent text-gray-600 hover:text-gray-900 hover:bg-gray-50"
                 }`}
               >
-                <Icon className="h-5 w-5" />
-                {tab.label}
+                <Icon className="h-4 w-4 sm:h-5 sm:w-5 flex-shrink-0" />
+                <span className="hidden xs:inline sm:inline">{tab.label}</span>
               </button>
             )
           })}

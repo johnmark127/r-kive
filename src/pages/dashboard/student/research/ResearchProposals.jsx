@@ -156,37 +156,38 @@ const ResearchProposals = () => {
   ]
 
   return (
-    <div className="min-h-screen bg-gray-50 p-6">
+    <div className="min-h-screen bg-gray-50 p-3 sm:p-6">
       {/* Header */}
-      <div className="bg-white rounded-lg p-6 shadow-sm border mb-6">
-        <div className="flex items-center justify-between">
-          <div>
-            <h1 className="text-2xl font-bold text-gray-900 mb-1 flex items-center gap-2">
-              <Lightbulb className="h-6 w-6 text-blue-600" />
-              Research Proposals 💡
+      <div className="bg-white rounded-lg p-4 sm:p-6 shadow-sm border mb-4 sm:mb-6">
+        <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between sm:gap-0">
+          <div className="flex-1">
+            <h1 className="text-lg sm:text-2xl font-bold text-gray-900 mb-1 flex items-center gap-2">
+              <Lightbulb className="h-5 w-5 sm:h-6 sm:w-6 text-blue-600 flex-shrink-0" />
+              <span>Research Proposals 💡</span>
             </h1>
-            <p className="text-gray-600">Track the status of your submitted research proposals</p>
+            <p className="text-sm sm:text-base text-gray-600">Track the status of your submitted research proposals</p>
           </div>
-          <Link to="/student/research/submit">
-            <Button className="bg-blue-600 hover:bg-blue-700">
-              Submit New Proposal
+          <Link to="/student/research/submit" className="w-full sm:w-auto">
+            <Button className="bg-blue-600 hover:bg-blue-700 w-full sm:w-auto text-sm">
+              <span className="sm:hidden">New Proposal</span>
+              <span className="hidden sm:inline">Submit New Proposal</span>
             </Button>
           </Link>
         </div>
       </div>
 
       {/* Stats Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+      <div className="grid grid-cols-2 sm:grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-6 mb-6 sm:mb-8">
         {stats.map((stat, index) => (
           <Card key={index} className="bg-white shadow-sm hover:shadow-md transition-shadow">
-            <CardContent className="p-6">
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-sm font-medium text-gray-600 mb-1">{stat.title}</p>
-                  <p className="text-3xl font-bold text-gray-900">{stat.value}</p>
+            <CardContent className="p-3 sm:p-6">
+              <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between">
+                <div className="mb-2 sm:mb-0">
+                  <p className="text-xs sm:text-sm font-medium text-gray-600 mb-1 line-clamp-2">{stat.title}</p>
+                  <p className="text-xl sm:text-3xl font-bold text-gray-900">{stat.value}</p>
                 </div>
-                <div className={`p-3 rounded-lg ${stat.color}`}>
-                  <stat.icon className="h-6 w-6" />
+                <div className={`p-2 sm:p-3 rounded-lg ${stat.color} self-end sm:self-auto`}>
+                  <stat.icon className="h-4 w-4 sm:h-6 sm:w-6" />
                 </div>
               </div>
             </CardContent>
@@ -195,14 +196,14 @@ const ResearchProposals = () => {
       </div>
 
       {/* Search */}
-      <div className="mb-6">
+      <div className="mb-4 sm:mb-6">
         <div className="relative">
-          <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4" />
+          <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-3 w-3 sm:h-4 sm:w-4" />
           <Input
-            placeholder="Search proposals by title or category..."
+            placeholder="Search proposals..."
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
-            className="pl-10"
+            className="pl-9 sm:pl-10 text-sm sm:text-base h-10 sm:h-auto"
           />
         </div>
       </div>
@@ -213,18 +214,18 @@ const ResearchProposals = () => {
           // Loading skeleton
           [1, 2, 3].map((i) => (
             <Card key={i} className="animate-pulse">
-              <CardContent className="p-6">
-                <div className="flex items-start justify-between mb-4">
-                  <div className="flex-1">
-                    <div className="h-4 bg-gray-200 rounded w-3/4 mb-2"></div>
-                    <div className="h-3 bg-gray-200 rounded w-full mb-2"></div>
-                    <div className="h-3 bg-gray-200 rounded w-2/3"></div>
+              <CardContent className="p-4 sm:p-6">
+                <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between mb-3 sm:mb-4">
+                  <div className="flex-1 mb-3 sm:mb-0">
+                    <div className="h-3 sm:h-4 bg-gray-200 rounded w-3/4 mb-2"></div>
+                    <div className="h-2 sm:h-3 bg-gray-200 rounded w-full mb-2"></div>
+                    <div className="h-2 sm:h-3 bg-gray-200 rounded w-2/3"></div>
                   </div>
-                  <div className="h-6 bg-gray-200 rounded w-20"></div>
+                  <div className="h-5 sm:h-6 bg-gray-200 rounded w-16 sm:w-20 self-start"></div>
                 </div>
                 <div className="flex gap-2">
-                  <div className="h-8 bg-gray-200 rounded w-16"></div>
-                  <div className="h-8 bg-gray-200 rounded w-16"></div>
+                  <div className="h-6 sm:h-8 bg-gray-200 rounded w-12 sm:w-16 flex-1 sm:flex-none"></div>
+                  <div className="h-6 sm:h-8 bg-gray-200 rounded w-12 sm:w-16 flex-1 sm:flex-none"></div>
                 </div>
               </CardContent>
             </Card>
@@ -236,41 +237,63 @@ const ResearchProposals = () => {
             
             return (
               <Card key={proposal.id} className="hover:shadow-md transition-all duration-200">
-                <CardContent className="p-6">
-                  <div className="flex items-start justify-between mb-4">
-                    <div className="flex-1 pr-4">
-                      <h3 className="text-lg font-semibold text-gray-900 mb-2">
-                        {proposal.title}
-                      </h3>
-                      <p className="text-sm text-gray-600 mb-3 line-clamp-2">
+                <CardContent className="p-4 sm:p-6">
+                  <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between mb-3 sm:mb-4">
+                    <div className="flex-1 mb-3 sm:mb-0 sm:pr-4">
+                      {/* Title and Status Badge */}
+                      <div className="flex items-start justify-between mb-2 sm:block">
+                        <h3 className="text-base sm:text-lg font-semibold text-gray-900 mb-0 sm:mb-2 pr-2 flex-1 line-clamp-2">
+                          {proposal.title}
+                        </h3>
+                        <div className="sm:hidden flex-shrink-0">
+                          <Badge className={`${statusConfig.color} flex items-center gap-1 text-xs`}>
+                            <StatusIcon className="h-2 w-2" />
+                            <span className="truncate max-w-[60px]">{statusConfig.text}</span>
+                          </Badge>
+                        </div>
+                      </div>
+                      
+                      {/* Description */}
+                      <p className="text-xs sm:text-sm text-gray-600 mb-2 sm:mb-3 line-clamp-2">
                         {proposal.abstract || proposal.description}
                       </p>
-                      <div className="flex items-center gap-4 text-xs text-gray-500 mb-2">
+                      
+                      {/* Dates and Research Field - Mobile Stacked */}
+                      <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:gap-4 text-xs text-gray-500 mb-2">
                         <div className="flex items-center gap-1">
-                          <Calendar className="h-3 w-3" />
-                          <span>Submitted: {new Date(proposal.created_at).toLocaleDateString()}</span>
+                          <Calendar className="h-3 w-3 flex-shrink-0" />
+                          <span className="truncate">Submitted: {new Date(proposal.created_at).toLocaleDateString()}</span>
                         </div>
                         {proposal.reviewed_at && (
                           <div className="flex items-center gap-1">
-                            <Calendar className="h-3 w-3" />
-                            <span>Reviewed: {new Date(proposal.reviewed_at).toLocaleDateString()}</span>
+                            <Calendar className="h-3 w-3 flex-shrink-0" />
+                            <span className="truncate">Reviewed: {new Date(proposal.reviewed_at).toLocaleDateString()}</span>
                           </div>
                         )}
+                      </div>
+                      
+                      {/* Research Field and Keywords */}
+                      <div className="flex flex-wrap gap-1 mb-2">
                         {proposal.research_field && (
-                          <span className="bg-gray-100 px-2 py-1 rounded">{proposal.research_field}</span>
+                          <span className="bg-gray-100 px-2 py-1 rounded text-xs truncate max-w-[120px] sm:max-w-none">
+                            {proposal.research_field}
+                          </span>
+                        )}
+                        {proposal.keywords && proposal.keywords.split(',').slice(0, 2).map((keyword, index) => (
+                          <span key={index} className="text-xs bg-blue-100 text-blue-600 px-2 py-1 rounded truncate max-w-[80px] sm:max-w-none">
+                            {keyword.trim()}
+                          </span>
+                        ))}
+                        {proposal.keywords && proposal.keywords.split(',').length > 2 && (
+                          <span className="text-xs bg-gray-100 text-gray-600 px-2 py-1 rounded">
+                            +{proposal.keywords.split(',').length - 2}
+                          </span>
                         )}
                       </div>
-                      {proposal.keywords && (
-                        <div className="flex flex-wrap gap-1 mb-2">
-                          {proposal.keywords.split(',').map((keyword, index) => (
-                            <span key={index} className="text-xs bg-blue-100 text-blue-600 px-2 py-1 rounded">
-                              {keyword.trim()}
-                            </span>
-                          ))}
-                        </div>
-                      )}
                     </div>
-                    <div className="flex flex-col items-end gap-2">
+                    
+                    {/* Desktop Status Badge */}
+                    <div className="hidden sm:flex flex-col items-end gap-2">
                       <Badge className={`${statusConfig.color} flex items-center gap-1`}>
                         <StatusIcon className="h-3 w-3" />
                         {statusConfig.text}
@@ -280,28 +303,30 @@ const ResearchProposals = () => {
 
                   {/* Reviewer Comments */}
                   {proposal.reviewer_comments && (
-                    <div className="mb-4 p-3 bg-gray-50 rounded-lg border-l-4 border-blue-500">
-                      <p className="text-sm font-medium text-gray-900 mb-1">Adviser Comments:</p>
-                      <p className="text-sm text-gray-700">{proposal.reviewer_comments}</p>
+                    <div className="mb-3 sm:mb-4 p-3 bg-gray-50 rounded-lg border-l-4 border-blue-500">
+                      <p className="text-xs sm:text-sm font-medium text-gray-900 mb-1">Adviser Comments:</p>
+                      <p className="text-xs sm:text-sm text-gray-700 line-clamp-3 sm:line-clamp-none">{proposal.reviewer_comments}</p>
                     </div>
                   )}
 
                   {/* Attached Files */}
                   {proposal.file_path && (
-                    <div className="mb-4 p-3 bg-blue-50 rounded-lg">
-                      <p className="text-sm font-medium text-gray-900 mb-2 flex items-center gap-2">
-                        <FileText className="h-4 w-4" />
+                    <div className="mb-3 sm:mb-4 p-3 bg-blue-50 rounded-lg">
+                      <p className="text-xs sm:text-sm font-medium text-gray-900 mb-2 flex items-center gap-2">
+                        <FileText className="h-3 w-3 sm:h-4 sm:w-4" />
                         Attached Files:
                       </p>
-                      <div className="flex items-center gap-2">
-                        <span className="text-sm text-gray-600">{proposal.file_name || 'Research Proposal Document'}</span>
+                      <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:gap-2">
+                        <span className="text-xs sm:text-sm text-gray-600 flex-1 truncate">
+                          {proposal.file_name || 'Research Proposal Document'}
+                        </span>
                         <Button
                           variant="outline"
                           size="sm"
                           onClick={() => downloadFile(proposal.file_path, proposal.file_name)}
-                          className="ml-auto"
+                          className="text-xs w-full sm:w-auto"
                         >
-                          <Download className="h-4 w-4 mr-1" />
+                          <Download className="h-3 w-3 sm:h-4 sm:w-4 mr-1" />
                           Download
                         </Button>
                       </div>
@@ -310,14 +335,16 @@ const ResearchProposals = () => {
 
                   {/* Actions */}
                   <div className="flex gap-2">
-                    <Button variant="outline" size="sm">
-                      <Eye className="h-4 w-4 mr-1" />
-                      View Details
+                    <Button variant="outline" size="sm" className="flex-1 sm:flex-none text-xs">
+                      <Eye className="h-3 w-3 sm:h-4 sm:w-4 mr-1" />
+                      <span className="sm:hidden">Details</span>
+                      <span className="hidden sm:inline">View Details</span>
                     </Button>
                     {(proposal.status === "revision_required" || proposal.status === "rejected") && (
-                      <Button variant="outline" size="sm">
-                        <Edit3 className="h-4 w-4 mr-1" />
-                        Revise & Resubmit
+                      <Button variant="outline" size="sm" className="flex-1 sm:flex-none text-xs">
+                        <Edit3 className="h-3 w-3 sm:h-4 sm:w-4 mr-1" />
+                        <span className="sm:hidden">Revise</span>
+                        <span className="hidden sm:inline">Revise & Resubmit</span>
                       </Button>
                     )}
                   </div>
@@ -326,18 +353,18 @@ const ResearchProposals = () => {
             )
           })
         ) : (
-          <div className="text-center py-12">
-            <Lightbulb className="h-16 w-16 text-gray-300 mx-auto mb-4" />
-            <h3 className="text-lg font-medium text-gray-900 mb-2">
+          <div className="text-center py-8 sm:py-12">
+            <Lightbulb className="h-12 w-12 sm:h-16 sm:w-16 text-gray-300 mx-auto mb-3 sm:mb-4" />
+            <h3 className="text-base sm:text-lg font-medium text-gray-900 mb-2">
               {searchQuery ? "No proposals found" : "No research proposals yet"}
             </h3>
-            <p className="text-gray-600 mb-6">
+            <p className="text-sm sm:text-base text-gray-600 mb-4 sm:mb-6 px-4">
               {searchQuery 
                 ? "Try adjusting your search criteria" 
                 : "Submit your first research proposal to get started"}
             </p>
             {!searchQuery && (
-              <Button className="bg-blue-600 hover:bg-blue-700">
+              <Button className="bg-blue-600 hover:bg-blue-700 text-sm w-full sm:w-auto max-w-xs">
                 Submit Your First Proposal
               </Button>
             )}
