@@ -619,6 +619,117 @@ main {
     color: #245884 !important;
   }
 
+  /* Force light mode for About page sections on mobile */
+  .about-content {
+    background-color: #ffffff !important;
+    color: #333333 !important;
+  }
+
+  .dark .about-content {
+    background-color: #ffffff !important;
+    color: #333333 !important;
+  }
+
+  .about-content h2,
+  .about-content h3,
+  .about-content h4,
+  .about-content p {
+    color: #333333 !important;
+  }
+
+  .dark .about-content h2,
+  .dark .about-content h3,
+  .dark .about-content h4,
+  .dark .about-content p {
+    color: #333333 !important;
+  }
+
+  /* Force Mission & Vision section to be light */
+  .mission-vision {
+    background-color: #f8f9fa !important;
+    color: #333333 !important;
+  }
+
+  .dark .mission-vision {
+    background-color: #f8f9fa !important;
+    color: #333333 !important;
+  }
+
+  .mission-vision .card {
+    background-color: #ffffff !important;
+    color: #333333 !important;
+    border: 1px solid #dee2e6 !important;
+  }
+
+  .dark .mission-vision .card {
+    background-color: #ffffff !important;
+    color: #333333 !important;
+    border: 1px solid #dee2e6 !important;
+  }
+
+  .mission-vision h3 {
+    color: #245884 !important;
+  }
+
+  .dark .mission-vision h3 {
+    color: #245884 !important;
+  }
+
+  /* Force Team section to be light */
+  .team-section {
+    background-color: #ffffff !important;
+    color: #333333 !important;
+  }
+
+  .dark .team-section {
+    background-color: #ffffff !important;
+    color: #333333 !important;
+  }
+
+  .team-section h2,
+  .team-section h4,
+  .team-section p {
+    color: #333333 !important;
+  }
+
+  .dark .team-section h2,
+  .dark .team-section h4,
+  .dark .team-section p {
+    color: #333333 !important;
+  }
+
+  /* Force team member cards to be light */
+  .team-member {
+    background-color: #ffffff !important;
+    color: #333333 !important;
+  }
+
+  .dark .team-member {
+    background-color: #ffffff !important;
+    color: #333333 !important;
+  }
+
+  /* Force statistics cards to be light */
+  .stat-card {
+    background-color: #ffffff !important;
+    color: #333333 !important;
+    border: 1px solid #dee2e6 !important;
+  }
+
+  .dark .stat-card {
+    background-color: #ffffff !important;
+    color: #333333 !important;
+    border: 1px solid #dee2e6 !important;
+  }
+
+  .stat-number {
+    color: #245884 !important;
+  }
+
+  .dark .stat-number {
+    color: #245884 !important;
+  }
+
   .header-container {
     height: 60px;
     padding: 0;
