@@ -266,47 +266,53 @@ const BrowseProjectsPage = () => {
       </div>
 
       {/* Compact Filters */}
-      <div className="bg-white rounded-lg border shadow-sm p-3 sm:p-4">
-        <div className="flex flex-col sm:flex-row sm:items-center gap-3 sm:gap-4">
-          <div className="flex flex-wrap items-center gap-2 sm:gap-3 flex-1">
-            <span className="text-sm font-medium text-gray-600 hidden sm:block">Filters:</span>
+      <div className="bg-white rounded-lg border shadow-sm p-3 sm:p-4 overflow-hidden">
+        <div className="flex flex-col sm:flex-row sm:items-center gap-3 sm:gap-4 min-w-0">
+          <div className="flex flex-wrap items-center gap-2 sm:gap-3 flex-1 min-w-0">
+            <span className="text-sm font-medium text-gray-600 hidden sm:block flex-shrink-0">Filters:</span>
             
-            <select
-              value={categoryFilter}
-              onChange={(e) => setCategoryFilter(e.target.value)}
-              className="min-w-0 flex-shrink-0 px-3 py-1.5 text-xs sm:text-sm border border-gray-200 rounded-md focus:ring-1 focus:ring-blue-500 focus:border-blue-500 bg-gray-50 hover:bg-white transition-colors"
-            >
-              <option value="">All Categories</option>
-              {categories.map((category) => (
-                <option key={category} value={category}>
-                  {category}
-                </option>
-              ))}
-            </select>
+            <div className="relative min-w-0 flex-shrink-0">
+              <select
+                value={categoryFilter}
+                onChange={(e) => setCategoryFilter(e.target.value)}
+                className="w-full min-w-[120px] max-w-[150px] sm:min-w-0 sm:max-w-none px-3 py-1.5 text-xs sm:text-sm border border-gray-200 rounded-md focus:ring-1 focus:ring-blue-500 focus:border-blue-500 bg-gray-50 hover:bg-white transition-colors"
+              >
+                <option value="">All Categories</option>
+                {categories.map((category) => (
+                  <option key={category} value={category}>
+                    {category}
+                  </option>
+                ))}
+              </select>
+            </div>
             
-            <select
-              value={yearFilter}
-              onChange={(e) => setYearFilter(e.target.value)}
-              className="min-w-0 flex-shrink-0 px-3 py-1.5 text-xs sm:text-sm border border-gray-200 rounded-md focus:ring-1 focus:ring-blue-500 focus:border-blue-500 bg-gray-50 hover:bg-white transition-colors"
-            >
-              <option value="">All Years</option>
-              {years.map((year) => (
-                <option key={year} value={year}>
-                  {year}
-                </option>
-              ))}
-            </select>
+            <div className="relative min-w-0 flex-shrink-0">
+              <select
+                value={yearFilter}
+                onChange={(e) => setYearFilter(e.target.value)}
+                className="w-full min-w-[90px] max-w-[120px] sm:min-w-0 sm:max-w-none px-3 py-1.5 text-xs sm:text-sm border border-gray-200 rounded-md focus:ring-1 focus:ring-blue-500 focus:border-blue-500 bg-gray-50 hover:bg-white transition-colors"
+              >
+                <option value="">All Years</option>
+                {years.map((year) => (
+                  <option key={year} value={year}>
+                    {year}
+                  </option>
+                ))}
+              </select>
+            </div>
             
-            <select
-              value={sortFilter}
-              onChange={(e) => setSortFilter(e.target.value)}
-              className="min-w-0 flex-shrink-0 px-3 py-1.5 text-xs sm:text-sm border border-gray-200 rounded-md focus:ring-1 focus:ring-blue-500 focus:border-blue-500 bg-gray-50 hover:bg-white transition-colors"
-            >
-              <option value="relevance">Relevance</option>
-              <option value="date">Date</option>
-              <option value="views">Views</option>
-              <option value="title">Title</option>
-            </select>
+            <div className="relative min-w-0 flex-shrink-0">
+              <select
+                value={sortFilter}
+                onChange={(e) => setSortFilter(e.target.value)}
+                className="w-full min-w-[100px] max-w-[130px] sm:min-w-0 sm:max-w-none px-3 py-1.5 text-xs sm:text-sm border border-gray-200 rounded-md focus:ring-1 focus:ring-blue-500 focus:border-blue-500 bg-gray-50 hover:bg-white transition-colors"
+              >
+                <option value="relevance">Relevance</option>
+                <option value="date">Date</option>
+                <option value="views">Views</option>
+                <option value="title">Title</option>
+              </select>
+            </div>
             
             {(categoryFilter || yearFilter || sortFilter !== "relevance") && (
               <Button
@@ -376,18 +382,26 @@ const BrowseProjectsPage = () => {
                             <span>{paper.year_published}</span>
                           </div>
                           <Badge variant="outline" className="text-xs">
-                            {paper.category}
+                            <span className="sm:hidden truncate block max-w-[80px]">
+                              {paper.category}
+                            </span>
+                            <span className="hidden sm:block">
+                              {paper.category}
+                            </span>
                           </Badge>
                         </div>
                       </div>
 
                       <p className="text-gray-700 text-sm mb-3 sm:mb-4 line-clamp-3">{paper.abstract}</p>
 
-                      <div className="flex flex-col xs:flex-row gap-2">
-                        <Button size="sm" onClick={() => openPaperModal(paper)} className="flex-1 text-xs sm:text-sm">
-                          <FileText className="w-3 h-3 sm:w-4 sm:h-4 mr-1" />
-                          <span className="hidden xs:inline">Read Paper</span>
-                          <span className="xs:hidden">Read</span>
+                      <div className="flex items-center justify-end gap-2">
+                        <Button 
+                          size="sm" 
+                          onClick={() => openPaperModal(paper)} 
+                          className="w-9 h-9 p-0 rounded-full"
+                          title="Read paper"
+                        >
+                          <FileText className="w-4 h-4" />
                         </Button>
                         <Button
                           variant="outline"
@@ -396,11 +410,10 @@ const BrowseProjectsPage = () => {
                             e.stopPropagation();
                             handleViewCitationTree(paper)
                           }}
-                          className="flex-1 text-xs sm:text-sm"
+                          className="w-9 h-9 p-0 rounded-full"
+                          title="View citation tree"
                         >
-                          <GitBranch className="w-3 h-3 sm:w-4 sm:h-4 mr-1" />
-                          <span className="hidden xs:inline">Citation Tree</span>
-                          <span className="xs:hidden">Citations</span>
+                          <GitBranch className="w-4 h-4" />
                         </Button>
                         <Button
                           variant="ghost"
@@ -413,7 +426,7 @@ const BrowseProjectsPage = () => {
                               addBookmark(paper.id)
                             }
                           }}
-                          className="p-2 h-auto xs:w-auto w-full xs:flex-none"
+                          className="w-9 h-9 p-0 rounded-full hover:bg-gray-100"
                           title={bookmarkedPapers.has(paper.id) ? "Remove bookmark" : "Add bookmark"}
                         >
                           {bookmarkedPapers.has(paper.id) ? (
@@ -421,9 +434,6 @@ const BrowseProjectsPage = () => {
                           ) : (
                             <BookmarkIcon className="w-4 h-4 text-gray-400" />
                           )}
-                          <span className="xs:hidden ml-2 text-xs">
-                            {bookmarkedPapers.has(paper.id) ? "Bookmarked" : "Bookmark"}
-                          </span>
                         </Button>
                       </div>
                     </div>

@@ -691,24 +691,25 @@ export default function CitationTreePage() {
   }
 
   return (
-    <div className="p-6 space-y-6 bg-gray-50 min-h-screen">
-      <div className="bg-white rounded-lg p-6 shadow-sm border">
-        <div className="flex items-center justify-between">
+    <div className="p-3 sm:p-6 space-y-4 sm:space-y-6 bg-gray-50 min-h-screen">
+      <div className="bg-white rounded-lg p-4 sm:p-6 shadow-sm border">
+        <div className="flex flex-col space-y-4 lg:flex-row lg:items-center lg:justify-between lg:space-y-0">
           <div>
-            <h1 className="text-2xl font-semibold text-gray-900 mb-1">Citation Network</h1>
-            <p className="text-gray-600">Academic literature mapping</p>
+            <h1 className="text-xl sm:text-2xl font-semibold text-gray-900 mb-1">Citation Network</h1>
+            <p className="text-sm sm:text-base text-gray-600">Academic literature mapping</p>
           </div>
-          <div className="flex items-center space-x-2">
+          <div className="flex flex-col space-y-3 sm:flex-row sm:items-center sm:space-y-0 sm:space-x-2">
             {selectedPaper && (
-              <>
+              <div className="flex space-x-2">
                 <Button
                   variant="outline"
                   size="sm"
                   onClick={() => setShowExportModal(true)}
-                  className="whitespace-nowrap"
+                  className="flex-1 sm:flex-none text-xs sm:text-sm"
                 >
-                  <Share2 className="w-4 h-4 mr-1" />
-                  Export & Share
+                  <Share2 className="w-3 h-3 sm:w-4 sm:h-4 mr-1" />
+                  <span className="hidden xs:inline">Export & Share</span>
+                  <span className="xs:hidden">Export</span>
                 </Button>
                 <Button
                   variant="outline"
@@ -720,20 +721,31 @@ export default function CitationTreePage() {
                       addBookmark(selectedPaper.id, selectedPaper.title)
                     }
                   }}
-                  className={bookmarkedPapers.has(selectedPaper.id) ? "bg-blue-50 text-blue-600" : ""}
+                  className={`flex-1 sm:flex-none text-xs sm:text-sm ${bookmarkedPapers.has(selectedPaper.id) ? "bg-blue-50 text-blue-600" : ""}`}
                 >
-                  <BookOpen className="w-4 h-4 mr-1" />
-                  {bookmarkedPapers.has(selectedPaper.id) ? "Bookmarked" : "Bookmark"}
+                  <BookOpen className="w-3 h-3 sm:w-4 sm:h-4 mr-1" />
+                  {bookmarkedPapers.has(selectedPaper.id) ? (
+                    <>
+                      <span className="hidden xs:inline">Bookmarked</span>
+                      <span className="xs:hidden">★</span>
+                    </>
+                  ) : (
+                    <>
+                      <span className="hidden xs:inline">Bookmark</span>
+                      <span className="xs:hidden">☆</span>
+                    </>
+                  )}
                 </Button>
-              </>
+              </div>
             )}
             <Button
               variant="outline"
               size="sm"
               onClick={() => setShowSemanticFilters(!showSemanticFilters)}
-              className="whitespace-nowrap"
+              className="text-xs sm:text-sm"
             >
-              Semantic Filters
+              <span className="hidden sm:inline">Semantic Filters</span>
+              <span className="sm:hidden">Filters</span>
             </Button>
             <div className="relative">
               <input
@@ -744,7 +756,7 @@ export default function CitationTreePage() {
                   setSearchQuery(e.target.value)
                   setSelectedPaper(null)
                 }}
-                className="px-3 py-2 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent w-96"
+                className="px-3 py-2 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent w-full sm:w-72 lg:w-96"
                 autoComplete="on"
               />
               {searchQuery && (
@@ -768,7 +780,7 @@ export default function CitationTreePage() {
                   {searchResults.map((paper) => (
                     <li
                       key={paper.id}
-                      className="px-4 py-2 text-xs text-gray-800 hover:bg-blue-50 hover:text-blue-700 transition-colors cursor-pointer rounded-lg mx-1 my-1"
+                      className="px-3 sm:px-4 py-2 text-xs text-gray-800 hover:bg-blue-50 hover:text-blue-700 transition-colors cursor-pointer rounded-lg mx-1 my-1"
                       style={{ fontSize: '0.85rem', fontWeight: 500, letterSpacing: '0.01em' }}
                       onClick={() => {
                         setSelectedPaper(paper)
@@ -777,8 +789,8 @@ export default function CitationTreePage() {
                       }}
                     >
                       <div className="flex justify-between items-center">
-                        <span>{paper.title}</span>
-                        <span className="ml-2 px-2 py-0.5 bg-gray-100 rounded text-gray-600 text-[11px]">
+                        <span className="truncate pr-2">{paper.title}</span>
+                        <span className="ml-2 px-2 py-0.5 bg-gray-100 rounded text-gray-600 text-[11px] whitespace-nowrap">
                           {citationCounts[paper.id] !== undefined ? `${citationCounts[paper.id]} citations` : '...'}
                         </span>
                       </div>
@@ -793,11 +805,11 @@ export default function CitationTreePage() {
 
       {/* Semantic Similarity Controls */}
       {showSemanticFilters && (
-        <div className="bg-white rounded-lg p-4 shadow-sm border">
-          <h3 className="font-semibold text-gray-900 mb-3">Semantic Similarity Controls</h3>
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
+        <div className="bg-white rounded-lg p-4 sm:p-6 shadow-sm border">
+          <h3 className="font-semibold text-gray-900 mb-3 text-sm sm:text-base">Semantic Similarity Controls</h3>
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
+            <div className="lg:col-span-1">
+              <label className="block text-xs sm:text-sm font-medium text-gray-700 mb-2">
                 Similarity Threshold: {(similarityThreshold * 100).toFixed(0)}%
               </label>
               <input
@@ -818,17 +830,17 @@ export default function CitationTreePage() {
                 onChange={(e) => setShowSimilarityLines(e.target.checked)}
                 className="rounded"
               />
-              <label htmlFor="showSimilarityLines" className="text-sm text-gray-700">
+              <label htmlFor="showSimilarityLines" className="text-xs sm:text-sm text-gray-700">
                 Show similarity connections
               </label>
             </div>
-            <div className="text-sm text-gray-600">
+            <div className="text-xs sm:text-sm text-gray-600">
               <div className="flex items-center space-x-2 mb-1">
-                <div className="w-4 h-4 bg-blue-500 rounded-full border-2 border-blue-600"></div>
+                <div className="w-3 h-3 sm:w-4 sm:h-4 bg-blue-500 rounded-full border-2 border-blue-600"></div>
                 <span>Direct Citations</span>
               </div>
               <div className="flex items-center space-x-2">
-                <div className="w-4 h-4 bg-green-100 rounded-full border-2 border-green-500"></div>
+                <div className="w-3 h-3 sm:w-4 sm:h-4 bg-green-100 rounded-full border-2 border-green-500"></div>
                 <span>Semantically Related</span>
               </div>
             </div>
@@ -836,48 +848,48 @@ export default function CitationTreePage() {
         </div>
       )}
 
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        <div className="lg:col-span-2">
-          <div className="h-[700px] bg-white rounded-lg shadow-sm border relative">
+      <div className="grid grid-cols-1 xl:grid-cols-3 gap-4 sm:gap-6">
+        <div className="xl:col-span-2">
+          <div className="h-[500px] sm:h-[600px] lg:h-[700px] bg-white rounded-lg shadow-sm border relative">
             {/* Zoom/Reset controls in top right of graph area */}
             {selectedPaper && (
-              <div className="absolute top-4 right-4 z-20 flex space-x-2">
-                <Button onClick={handleZoomOut} variant="outline" size="sm">
-                  <ZoomOut className="w-4 h-4" />
+              <div className="absolute top-2 sm:top-4 right-2 sm:right-4 z-20 flex space-x-1 sm:space-x-2">
+                <Button onClick={handleZoomOut} variant="outline" size="sm" className="p-1.5 sm:p-2">
+                  <ZoomOut className="w-3 h-3 sm:w-4 sm:h-4" />
                 </Button>
-                <Button onClick={handleZoomIn} variant="outline" size="sm">
-                  <ZoomIn className="w-4 h-4" />
+                <Button onClick={handleZoomIn} variant="outline" size="sm" className="p-1.5 sm:p-2">
+                  <ZoomIn className="w-3 h-3 sm:w-4 sm:h-4" />
                 </Button>
-                <Button onClick={handleReset} variant="outline" size="sm">
-                  <RotateCcw className="w-4 h-4" />
+                <Button onClick={handleReset} variant="outline" size="sm" className="p-1.5 sm:p-2">
+                  <RotateCcw className="w-3 h-3 sm:w-4 sm:h-4" />
                 </Button>
               </div>
             )}
             {hoveredPaper && (
-              <div className="absolute top-4 left-4 bg-white border border-gray-200 rounded-lg p-3 shadow-lg z-10 max-w-xs">
-                <h4 className="font-semibold text-sm text-gray-900 mb-1">{hoveredPaper.name}</h4>
-                <p className="text-xs text-gray-600 mb-2">{hoveredPaper.citations} citations</p>
-                <p className="text-xs text-gray-500">Click to view details</p>
+              <div className="absolute top-2 sm:top-4 left-2 sm:left-4 bg-white border border-gray-200 rounded-lg p-2 sm:p-3 shadow-lg z-10 max-w-[200px] sm:max-w-xs">
+                <h4 className="font-semibold text-xs sm:text-sm text-gray-900 mb-1 truncate">{hoveredPaper.name}</h4>
+                <p className="text-xs text-gray-600 mb-1 sm:mb-2">{hoveredPaper.citations} citations</p>
+                <p className="text-xs text-gray-500 hidden sm:block">Click to view details</p>
               </div>
             )}
 
             {/* Empty state when no paper is selected */}
             {!selectedPaper && (
-              <div className="absolute inset-0 flex items-center justify-center">
-                <div className="text-center space-y-4 max-w-md mx-auto px-6">
-                  <div className="w-24 h-24 mx-auto bg-gray-100 rounded-full flex items-center justify-center">
-                    <BookOpen className="w-12 h-12 text-gray-400" />
+              <div className="absolute inset-0 flex items-center justify-center p-4">
+                <div className="text-center space-y-3 sm:space-y-4 max-w-md mx-auto">
+                  <div className="w-16 h-16 sm:w-24 sm:h-24 mx-auto bg-gray-100 rounded-full flex items-center justify-center">
+                    <BookOpen className="w-8 h-8 sm:w-12 sm:h-12 text-gray-400" />
                   </div>
                   <div className="space-y-2">
-                    <h3 className="text-xl font-semibold text-gray-900">
+                    <h3 className="text-lg sm:text-xl font-semibold text-gray-900">
                       No Paper Selected
                     </h3>
-                    <p className="text-gray-600 text-sm leading-relaxed">
+                    <p className="text-gray-600 text-xs sm:text-sm leading-relaxed px-2">
                       Search and select a research paper from the search bar above to explore its citation network and see connected academic literature.
                     </p>
                   </div>
-                  <div className="flex items-center justify-center space-x-2 text-sm text-gray-500">
-                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <div className="flex items-center justify-center space-x-2 text-xs sm:text-sm text-gray-500">
+                    <svg className="w-3 h-3 sm:w-4 sm:h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
                     </svg>
                     <span>Start by searching for a paper</span>
@@ -892,10 +904,10 @@ export default function CitationTreePage() {
           </div>
         </div>
 
-        <div className="space-y-6">
-          <div className="bg-white rounded-lg shadow-sm border p-6">
-            <div className="flex items-start justify-between mb-4">
-              <h3 className="font-semibold text-gray-900">Paper Details</h3>
+        <div className="space-y-4 sm:space-y-6">
+          <div className="bg-white rounded-lg shadow-sm border p-4 sm:p-6">
+            <div className="flex items-start justify-between mb-3 sm:mb-4">
+              <h3 className="font-semibold text-gray-900 text-sm sm:text-base">Paper Details</h3>
               {selectedPaper && (
                 <Button
                   variant="outline"
@@ -907,92 +919,91 @@ export default function CitationTreePage() {
                       addBookmark(selectedPaper.id, selectedPaper.title)
                     }
                   }}
-                  className={bookmarkedPapers.has(selectedPaper.id) ? "bg-blue-50 text-blue-600" : ""}
+                  className={`text-xs sm:text-sm ${bookmarkedPapers.has(selectedPaper.id) ? "bg-blue-50 text-blue-600" : ""}`}
                 >
-                  {bookmarkedPapers.has(selectedPaper.id) ? "Bookmarked" : "Bookmark"}
+                  <BookOpen className="w-3 h-3 sm:w-4 sm:h-4 mr-1" />
+                  <span className="hidden xs:inline">{bookmarkedPapers.has(selectedPaper.id) ? "Bookmarked" : "Bookmark"}</span>
+                  <span className="xs:hidden">{bookmarkedPapers.has(selectedPaper.id) ? "★" : "☆"}</span>
                 </Button>
               )}
             </div>
             
             {selectedPaper ? (
-              <div className="space-y-4">
+              <div className="space-y-3 sm:space-y-4">
                 <div>
-                  <h4 className="font-medium text-gray-900 mb-2">{selectedPaper.title}</h4>
-                  <div className="space-y-2 text-sm text-gray-600">
-                    <div className="flex items-center">
-                      <Users className="w-4 h-4 mr-2" />
-                      <span>{selectedPaper.authors}</span>
+                  <h4 className="font-medium text-gray-900 mb-2 text-sm sm:text-base line-clamp-2">{selectedPaper.title}</h4>
+                  <div className="space-y-2 text-xs sm:text-sm text-gray-600">
+                    <div className="flex items-start">
+                      <Users className="w-3 h-3 sm:w-4 sm:h-4 mr-2 mt-0.5 flex-shrink-0" />
+                      <span className="line-clamp-2">{selectedPaper.authors}</span>
                     </div>
                     <div className="flex items-center">
-                      <Calendar className="w-4 h-4 mr-2" />
+                      <Calendar className="w-3 h-3 sm:w-4 sm:h-4 mr-2 flex-shrink-0" />
                       <span>{selectedPaper.year_published}</span>
                     </div>
                     <div className="flex items-center">
-                      <BookOpen className="w-4 h-4 mr-2" />
-                      <span>{selectedPaper.category || 'No category'}</span>
+                      <BookOpen className="w-3 h-3 sm:w-4 sm:h-4 mr-2 flex-shrink-0" />
+                      <span className="truncate">{selectedPaper.category || 'No category'}</span>
                     </div>
                   </div>
                 </div>
                 
                 <div className="flex flex-wrap gap-2">
-                  <Badge variant="secondary">
+                  <Badge variant="secondary" className="text-xs">
                     {(selectedPaper.citations || 0).toLocaleString()} citations
                   </Badge>
                   {selectedPaper.similarity && (
-                    <Badge variant="outline" className="bg-green-50 text-green-700">
+                    <Badge variant="outline" className="bg-green-50 text-green-700 text-xs">
                       {(selectedPaper.similarity * 100).toFixed(0)}% similar
                     </Badge>
                   )}
                 </div>
                 
                 {detailedPaperInfo && showPaperDetails && detailedPaperInfo.id === selectedPaper.id && (
-                  <div className="pt-4 border-t">
-                    <h5 className="font-medium text-gray-900 mb-2">Abstract</h5>
-                    <p className="text-sm text-gray-700 leading-relaxed mb-3">
+                  <div className="pt-3 sm:pt-4 border-t">
+                    <h5 className="font-medium text-gray-900 mb-2 text-sm">Abstract</h5>
+                    <p className="text-xs sm:text-sm text-gray-700 leading-relaxed mb-3 line-clamp-4">
                       {detailedPaperInfo.abstract || 'No abstract available.'}
                     </p>
                     
-                    <div className="grid grid-cols-2 gap-4 text-xs text-gray-600">
+                    <div className="grid grid-cols-2 gap-3 sm:gap-4 text-xs text-gray-600">
                       <div>
                         <span className="font-medium">Views:</span> {detailedPaperInfo.views || 0}
                       </div>
                       <div>
                         <span className="font-medium">Citations:</span> {detailedPaperInfo.citationCount}
                       </div>
-                      <div>
+                      <div className="col-span-2">
                         <span className="font-medium">Uploaded:</span> {detailedPaperInfo.uploaded_at ? new Date(detailedPaperInfo.uploaded_at).toLocaleDateString() : 'Unknown'}
-                      </div>
-                      <div>
-                        <span className="font-medium">File Size:</span> {detailedPaperInfo.file_size ? `${(detailedPaperInfo.file_size / 1024 / 1024).toFixed(1)} MB` : 'Unknown'}
                       </div>
                     </div>
                   </div>
                 )}
               </div>
             ) : (
-              <div className="text-center py-8">
-                <div className="w-16 h-16 mx-auto bg-gray-100 rounded-full flex items-center justify-center mb-3">
-                  <BookOpen className="w-8 h-8 text-gray-400" />
+              <div className="text-center py-6 sm:py-8">
+                <div className="w-12 h-12 sm:w-16 sm:h-16 mx-auto bg-gray-100 rounded-full flex items-center justify-center mb-3">
+                  <BookOpen className="w-6 h-6 sm:w-8 sm:h-8 text-gray-400" />
                 </div>
-                <h4 className="font-medium text-gray-900 mb-2">No Paper Selected</h4>
-                <p className="text-sm text-gray-600">
+                <h4 className="font-medium text-gray-900 mb-2 text-sm sm:text-base">No Paper Selected</h4>
+                <p className="text-xs sm:text-sm text-gray-600 px-2">
                   Search and select a research paper to explore its citation network and details.
                 </p>
               </div>
             )}
           </div>
 
-          <div className="bg-white rounded-lg shadow-sm border p-6">
-            <h4 className="font-semibold text-gray-900 mb-4">Semantically Related Papers</h4>
-            <div className="space-y-3">
+          <div className="bg-white rounded-lg shadow-sm border p-4 sm:p-6">
+            <h4 className="font-semibold text-gray-900 mb-3 sm:mb-4 text-sm sm:text-base">Semantically Related Papers</h4>
+            <div className="space-y-2 sm:space-y-3">
               {!selectedPaper ? (
-                <div className="text-center py-6">
-                  <div className="w-12 h-12 mx-auto bg-green-100 rounded-full flex items-center justify-center mb-2">
-                    <svg className="w-6 h-6 text-green-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <div className="text-center py-4 sm:py-6">
+                  <div className="w-10 h-10 sm:w-12 sm:h-12 mx-auto bg-green-100 rounded-full flex items-center justify-center mb-2">
+                    <svg className="w-5 h-5 sm:w-6 sm:h-6 text-green-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" />
                     </svg>
                   </div>
-                  <p className="text-gray-500 text-sm">
+                  <p className="text-gray-500 text-xs sm:text-sm px-2">
                     Related papers will appear here when you select a research paper
                   </p>
                 </div>
@@ -1000,45 +1011,45 @@ export default function CitationTreePage() {
                 relatedPapers.slice(0, 5).map((paper, index) => (
                   <div
                     key={index}
-                    className="p-3 border rounded-lg transition-all cursor-pointer border-green-200 hover:bg-green-50"
+                    className="p-2.5 sm:p-3 border rounded-lg transition-all cursor-pointer border-green-200 hover:bg-green-50"
                     onClick={() => {
                       fetchPaperDetails(paper.id)
                     }}
                   >
-                    <h4 className="font-medium text-gray-900 text-sm mb-1">{paper.title}</h4>
-                    <div className="flex items-center justify-between">
-                      <div className="text-xs text-gray-600">{paper.author}</div>
-                      <Badge variant="outline" className="text-xs bg-green-50 text-green-700">
-                        {(paper.similarity * 100).toFixed(0)}% similar
+                    <h4 className="font-medium text-gray-900 text-xs sm:text-sm mb-1 line-clamp-2">{paper.title}</h4>
+                    <div className="flex items-center justify-between gap-2">
+                      <div className="text-xs text-gray-600 truncate flex-1">{paper.author}</div>
+                      <Badge variant="outline" className="text-xs bg-green-50 text-green-700 whitespace-nowrap">
+                        {(paper.similarity * 100).toFixed(0)}%
                       </Badge>
                     </div>
                   </div>
                 ))
               ) : (
-                <div className="text-center py-6">
-                  <div className="w-12 h-12 mx-auto bg-gray-100 rounded-full flex items-center justify-center mb-2">
-                    <svg className="w-6 h-6 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <div className="text-center py-4 sm:py-6">
+                  <div className="w-10 h-10 sm:w-12 sm:h-12 mx-auto bg-gray-100 rounded-full flex items-center justify-center mb-2">
+                    <svg className="w-5 h-5 sm:w-6 sm:h-6 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
                     </svg>
                   </div>
-                  <p className="text-gray-500 text-sm">No semantically related papers found</p>
+                  <p className="text-gray-500 text-xs sm:text-sm">No semantically related papers found</p>
                   <p className="text-gray-400 text-xs mt-1">Try lowering the similarity threshold</p>
                 </div>
               )}
             </div>
           </div>
 
-          <div className="bg-white rounded-lg shadow-sm border p-6">
-            <h4 className="font-semibold text-gray-900 mb-4">Direct Citations</h4>
-             <div className="space-y-3">
+          <div className="bg-white rounded-lg shadow-sm border p-4 sm:p-6">
+            <h4 className="font-semibold text-gray-900 mb-3 sm:mb-4 text-sm sm:text-base">Direct Citations</h4>
+             <div className="space-y-2 sm:space-y-3">
               {!selectedPaper ? (
-                <div className="text-center py-8">
-                  <div className="w-16 h-16 mx-auto bg-gray-100 rounded-full flex items-center justify-center mb-3">
-                    <svg className="w-8 h-8 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <div className="text-center py-6 sm:py-8">
+                  <div className="w-12 h-12 sm:w-16 sm:h-16 mx-auto bg-gray-100 rounded-full flex items-center justify-center mb-3">
+                    <svg className="w-6 h-6 sm:w-8 sm:h-8 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13.828 10.172a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.101m-.758-4.899a4 4 0 005.656 0l4-4a4 4 0 00-5.656-5.656l-1.1 1.1" />
                     </svg>
                   </div>
-                  <p className="text-gray-500 text-sm">
+                  <p className="text-gray-500 text-xs sm:text-sm px-2">
                     Connected papers will appear here when you select a research paper
                   </p>
                 </div>
@@ -1046,7 +1057,7 @@ export default function CitationTreePage() {
                 citationData.children.slice(0, 5).map((paper, index) => (
                   <div
                     key={index}
-                    className={`p-3 border rounded-lg transition-all cursor-pointer ${
+                    className={`p-2.5 sm:p-3 border rounded-lg transition-all cursor-pointer ${
                       hoveredPaper?.id === paper.id ? "border-blue-300 bg-blue-50" : "border-gray-200 hover:bg-gray-50"
                     }`}
                     onClick={() => {
@@ -1055,18 +1066,18 @@ export default function CitationTreePage() {
                     onMouseEnter={() => setHoveredPaper(paper)}
                     onMouseLeave={() => setHoveredPaper(null)}
                   >
-                    <h4 className="font-medium text-gray-900 text-sm mb-1">{paper.name}</h4>
+                    <h4 className="font-medium text-gray-900 text-xs sm:text-sm mb-1 line-clamp-2">{paper.name}</h4>
                     <div className="text-xs text-gray-600">{paper.citations} citations</div>
                   </div>
                 ))
               ) : (
-                <div className="text-center py-6">
-                  <div className="w-12 h-12 mx-auto bg-gray-100 rounded-full flex items-center justify-center mb-2">
-                    <svg className="w-6 h-6 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <div className="text-center py-4 sm:py-6">
+                  <div className="w-10 h-10 sm:w-12 sm:h-12 mx-auto bg-gray-100 rounded-full flex items-center justify-center mb-2">
+                    <svg className="w-5 h-5 sm:w-6 sm:h-6 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
                     </svg>
                   </div>
-                  <p className="text-gray-500 text-sm">No citations found for this paper</p>
+                  <p className="text-gray-500 text-xs sm:text-sm">No citations found for this paper</p>
                 </div>
               )}
             </div>
@@ -1080,30 +1091,31 @@ export default function CitationTreePage() {
           onClick={() => setIsModalOpen(false)}
         >
           <div
-            className="bg-white rounded-lg shadow-xl p-6 max-w-lg w-full animate-in zoom-in-95 duration-200"
+            className="bg-white rounded-lg shadow-xl p-4 sm:p-6 max-w-sm sm:max-w-lg w-full animate-in zoom-in-95 duration-200"
             onClick={(e) => e.stopPropagation()}
           >
-            <div className="flex items-start justify-between mb-4">
-              <div>
-                <h3 className="font-semibold text-lg text-gray-900 mb-2">{selectedPaper.name}</h3>
-                <div className="text-sm text-gray-600 mb-3">
-                  {selectedPaper.authors} • {selectedPaper.year_published}
+            <div className="flex items-start justify-between mb-3 sm:mb-4">
+              <div className="flex-1 pr-2">
+                <h3 className="font-semibold text-base sm:text-lg text-gray-900 mb-2 line-clamp-2">{selectedPaper.name}</h3>
+                <div className="text-xs sm:text-sm text-gray-600 mb-3">
+                  <div className="line-clamp-1">{selectedPaper.authors}</div>
+                  <div>{selectedPaper.year_published}</div>
                 </div>
-                <Badge variant="secondary">{selectedPaper.citations} citations</Badge>
+                <Badge variant="secondary" className="text-xs">{selectedPaper.citations} citations</Badge>
               </div>
-              <button className="text-gray-400 hover:text-gray-600 p-1" onClick={() => setIsModalOpen(false)}>
+              <button className="text-gray-400 hover:text-gray-600 p-1 flex-shrink-0" onClick={() => setIsModalOpen(false)}>
                 <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
                 </svg>
               </button>
             </div>
-            <div className="flex space-x-3">
-              <Button className="flex-1">
-                <BookOpen className="w-4 h-4 mr-2" />
+            <div className="flex flex-col xs:flex-row space-y-2 xs:space-y-0 xs:space-x-3">
+              <Button className="flex-1 text-sm">
+                <BookOpen className="w-3 h-3 sm:w-4 sm:h-4 mr-2" />
                 View Paper
               </Button>
-              <Button variant="outline" className="flex-1 bg-transparent">
-                <Share2 className="w-4 h-4 mr-2" />
+              <Button variant="outline" className="flex-1 bg-transparent text-sm">
+                <Share2 className="w-3 h-3 sm:w-4 sm:h-4 mr-2" />
                 Share
               </Button>
             </div>
@@ -1114,12 +1126,12 @@ export default function CitationTreePage() {
       {/* Export & Share Modal */}
       {showExportModal && selectedPaper && (
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
-          <div className="bg-white rounded-lg shadow-xl p-6 max-w-md w-full">
-            <div className="flex items-center justify-between mb-4">
-              <h3 className="text-lg font-semibold text-gray-900">Export & Share</h3>
+          <div className="bg-white rounded-lg shadow-xl p-4 sm:p-6 max-w-sm sm:max-w-md w-full">
+            <div className="flex items-center justify-between mb-3 sm:mb-4">
+              <h3 className="text-base sm:text-lg font-semibold text-gray-900">Export & Share</h3>
               <button 
                 onClick={() => setShowExportModal(false)}
-                className="text-gray-400 hover:text-gray-600"
+                className="text-gray-400 hover:text-gray-600 p-1"
               >
                 <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
@@ -1127,41 +1139,42 @@ export default function CitationTreePage() {
               </button>
             </div>
             
-            <div className="space-y-3">
+            <div className="space-y-2 sm:space-y-3">
               <Button 
                 onClick={exportAsImage} 
                 disabled={isExporting}
-                className="w-full justify-start"
+                className="w-full justify-start text-sm"
                 variant="outline"
               >
-                <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <svg className="w-3 h-3 sm:w-4 sm:h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
                 </svg>
-                {isExporting ? 'Exporting...' : 'Export as Image (PNG)'}
+                <span>{isExporting ? 'Exporting...' : 'Export as Image (PNG)'}</span>
               </Button>
               
               <Button 
                 onClick={exportCitationData}
-                className="w-full justify-start"
+                className="w-full justify-start text-sm"
                 variant="outline"
               >
-                <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <svg className="w-3 h-3 sm:w-4 sm:h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
                 </svg>
-                Export Citation Data (JSON)
+                <span className="hidden xs:inline">Export Citation Data (JSON)</span>
+                <span className="xs:hidden">Export Data (JSON)</span>
               </Button>
               
               <Button 
                 onClick={shareNetwork}
-                className="w-full justify-start"
+                className="w-full justify-start text-sm"
                 variant="outline"
               >
-                <Share2 className="w-4 h-4 mr-2" />
+                <Share2 className="w-3 h-3 sm:w-4 sm:h-4 mr-2" />
                 Share Citation Network
               </Button>
             </div>
             
-            <div className="mt-4 p-3 bg-gray-50 rounded-lg">
+            <div className="mt-3 sm:mt-4 p-3 bg-gray-50 rounded-lg">
               <p className="text-xs text-gray-600">
                 <strong>Tip:</strong> The JSON export includes all citation data, semantic relationships, and can be imported into other analysis tools.
               </p>
@@ -1172,34 +1185,34 @@ export default function CitationTreePage() {
       
       {/* Paper Abstract Modal */}
       {detailedPaperInfo && isModalOpen && (
-        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
-          <div className="bg-white rounded-lg shadow-xl p-6 max-w-4xl w-full max-h-[85vh] overflow-y-auto">
-            <div className="flex items-start justify-between mb-6">
-              <div className="flex-1">
-                <h2 className="text-2xl font-bold text-gray-900 mb-2 pr-8">{detailedPaperInfo.title}</h2>
-                <div className="flex flex-wrap items-center gap-4 text-sm text-gray-600 mb-4">
-                  <div className="flex items-center">
-                    <Users className="w-4 h-4 mr-1" />
-                    <span><strong>Authors:</strong> {detailedPaperInfo.authors}</span>
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-3 sm:p-4">
+          <div className="bg-white rounded-lg shadow-xl p-4 sm:p-6 max-w-sm sm:max-w-2xl lg:max-w-4xl w-full max-h-[90vh] sm:max-h-[85vh] overflow-y-auto">
+            <div className="flex items-start justify-between mb-4 sm:mb-6">
+              <div className="flex-1 pr-2">
+                <h2 className="text-lg sm:text-xl lg:text-2xl font-bold text-gray-900 mb-2 line-clamp-3">{detailedPaperInfo.title}</h2>
+                <div className="flex flex-col sm:flex-row sm:flex-wrap sm:items-center gap-2 sm:gap-4 text-xs sm:text-sm text-gray-600 mb-3 sm:mb-4">
+                  <div className="flex items-start">
+                    <Users className="w-3 h-3 sm:w-4 sm:h-4 mr-1 mt-0.5 flex-shrink-0" />
+                    <span><strong>Authors:</strong> <span className="line-clamp-2">{detailedPaperInfo.authors}</span></span>
                   </div>
                   <div className="flex items-center">
-                    <Calendar className="w-4 h-4 mr-1" />
+                    <Calendar className="w-3 h-3 sm:w-4 sm:h-4 mr-1 flex-shrink-0" />
                     <span><strong>Year:</strong> {detailedPaperInfo.year_published}</span>
                   </div>
                   <div className="flex items-center">
-                    <BookOpen className="w-4 h-4 mr-1" />
-                    <span><strong>Category:</strong> {detailedPaperInfo.category || 'No category'}</span>
+                    <BookOpen className="w-3 h-3 sm:w-4 sm:h-4 mr-1 flex-shrink-0" />
+                    <span><strong>Category:</strong> <span className="truncate">{detailedPaperInfo.category || 'No category'}</span></span>
                   </div>
                 </div>
-                <div className="flex gap-2">
-                  <Badge variant="secondary">
+                <div className="flex flex-wrap gap-2">
+                  <Badge variant="secondary" className="text-xs">
                     {(detailedPaperInfo.citationCount || 0).toLocaleString()} citations
                   </Badge>
-                  <Badge variant="outline">
+                  <Badge variant="outline" className="text-xs">
                     {detailedPaperInfo.views || 0} views
                   </Badge>
                   {detailedPaperInfo.similarity && (
-                    <Badge variant="outline" className="bg-green-50 text-green-700">
+                    <Badge variant="outline" className="bg-green-50 text-green-700 text-xs">
                       {(detailedPaperInfo.similarity * 100).toFixed(0)}% similar
                     </Badge>
                   )}
@@ -1207,24 +1220,24 @@ export default function CitationTreePage() {
               </div>
               <button 
                 onClick={() => setIsModalOpen(false)}
-                className="text-gray-400 hover:text-gray-600 flex-shrink-0 p-2"
+                className="text-gray-400 hover:text-gray-600 flex-shrink-0 p-1 sm:p-2"
               >
-                <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <svg className="w-5 h-5 sm:w-6 sm:h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
                 </svg>
               </button>
             </div>
             
-            <div className="mb-6">
-              <h3 className="text-lg font-semibold text-gray-900 mb-3">Abstract</h3>
-              <div className="bg-gray-50 rounded-lg p-4 border">
-                <p className="text-gray-800 leading-relaxed text-base">
+            <div className="mb-4 sm:mb-6">
+              <h3 className="text-base sm:text-lg font-semibold text-gray-900 mb-3">Abstract</h3>
+              <div className="bg-gray-50 rounded-lg p-3 sm:p-4 border">
+                <p className="text-gray-800 leading-relaxed text-sm sm:text-base">
                   {detailedPaperInfo.abstract || 'No abstract available for this paper.'}
                 </p>
               </div>
             </div>
             
-            <div className="flex flex-wrap gap-3 pt-4 border-t">
+            <div className="flex flex-col xs:flex-row flex-wrap gap-2 sm:gap-3 pt-3 sm:pt-4 border-t">
               <Button 
                 onClick={() => {
                   if (bookmarkedPapers.has(detailedPaperInfo.id)) {
@@ -1233,13 +1246,11 @@ export default function CitationTreePage() {
                     addBookmark(detailedPaperInfo.id, detailedPaperInfo.title)
                   }
                 }}
-                className={bookmarkedPapers.has(detailedPaperInfo.id) 
-                  ? "bg-blue-600 hover:bg-blue-700 text-white" 
-                  : "bg-blue-600 hover:bg-blue-700 text-white"
-                }
+                className="bg-blue-600 hover:bg-blue-700 text-white text-sm flex-1 xs:flex-none"
               >
-                <BookOpen className="w-4 h-4 mr-2" />
-                {bookmarkedPapers.has(detailedPaperInfo.id) ? "Remove Bookmark" : "Bookmark Paper"}
+                <BookOpen className="w-3 h-3 sm:w-4 sm:h-4 mr-2" />
+                <span className="hidden sm:inline">{bookmarkedPapers.has(detailedPaperInfo.id) ? "Remove Bookmark" : "Bookmark Paper"}</span>
+                <span className="sm:hidden">{bookmarkedPapers.has(detailedPaperInfo.id) ? "Remove" : "Bookmark"}</span>
               </Button>
               
               <Button 
@@ -1261,24 +1272,29 @@ export default function CitationTreePage() {
                   setSemanticSimilarities({})
                 }}
                 variant="outline"
+                className="text-sm flex-1 xs:flex-none"
               >
-                <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <svg className="w-3 h-3 sm:w-4 sm:h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13.828 10.172a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.101m-.758-4.899a4 4 0 005.656 0l4-4a4 4 0 00-5.656-5.656l-1.1 1.1" />
                 </svg>
-                Explore Citation Network
+                <span className="hidden sm:inline">Explore Citation Network</span>
+                <span className="sm:hidden">Explore</span>
               </Button>
               
               <Button 
                 onClick={() => setShowExportModal(true)}
                 variant="outline"
+                className="text-sm flex-1 xs:flex-none"
               >
-                <Share2 className="w-4 h-4 mr-2" />
-                Share & Export
+                <Share2 className="w-3 h-3 sm:w-4 sm:h-4 mr-2" />
+                <span className="hidden xs:inline">Share & Export</span>
+                <span className="xs:hidden">Share</span>
               </Button>
               
               <Button 
                 onClick={() => setIsModalOpen(false)}
                 variant="outline"
+                className="text-sm flex-1 xs:flex-none"
               >
                 Close
               </Button>

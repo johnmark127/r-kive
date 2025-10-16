@@ -227,64 +227,81 @@ const BookmarksPage = () => {
   // --------- END MODAL BUTTON LOGIC FIXED ---------
 
   return (
-    <div className="p-6 space-y-6 bg-gray-50 min-h-screen">
+    <div className="space-y-4 sm:space-y-6 bg-gray-50 min-h-screen">
       <ToastManager />
       {/* Welcome Header */}
-      <div className="bg-white rounded-lg p-6 shadow-sm border">
-        <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
+      <div className="bg-white rounded-lg p-4 sm:p-6 shadow-sm border">
+        <div className="flex flex-col gap-4">
           <div>
-            <h1 className="text-2xl font-bold text-gray-900 mb-1">My Bookmarked Papers</h1>
-            <p className="text-gray-600">Access your saved research papers here</p>
+            <h1 className="text-xl sm:text-2xl font-bold text-gray-900 mb-1">My Bookmarked Papers</h1>
+            <p className="text-sm sm:text-base text-gray-600">Access your saved research papers here</p>
           </div>
-          <div className="relative w-full md:w-80">
+          <div className="relative w-full">
             <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
             <input
               type="text"
-              placeholder="Search by title, author, or categories..."
+              placeholder="Search bookmarks..."
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
-              className="w-full pl-10 pr-8 py-2 text-sm bg-white border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all"
+              className="w-full pl-10 pr-4 py-2.5 sm:py-2 text-sm bg-white border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all"
             />
           </div>
         </div>
       </div>
 
       {/* Bookmarked Papers Grid - Browse Style */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-6">
+      <div className="grid grid-cols-1 sm:grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-4 sm:gap-6">
         {loading ? (
-          <div className="col-span-full text-center py-16 text-gray-600">Loading bookmarks...</div>
+          <div className="col-span-full text-center py-8 sm:py-16 text-gray-600">
+            <div className="w-8 h-8 border-4 border-blue-600 border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
+            <p>Loading bookmarks...</p>
+          </div>
         ) : filteredPapers.length > 0 ? (
           filteredPapers.map((paper) => (
-            <Card key={paper.bookmark_id} className="hover:shadow-md transition-all duration-200 hover:scale-[1.02]">
-              <CardContent className="p-6">
-                <div className="space-y-4">
+            <Card key={paper.bookmark_id} className="hover:shadow-md transition-all duration-200 hover:scale-[1.01] sm:hover:scale-[1.02]">
+              <CardContent className="p-4 sm:p-6">
+                <div className="space-y-3 sm:space-y-4">
                   <div>
-                    <h3 className="font-semibold text-gray-900 text-lg leading-tight mb-2 line-clamp-2">
+                    <h3 className="font-semibold text-gray-900 text-base sm:text-lg leading-tight mb-2 line-clamp-2">
                       {paper.title}
                     </h3>
                     <div className="flex items-center text-sm text-gray-600 mb-2">
-                      <User className="w-4 h-4 mr-1" />
+                      <User className="w-3 h-3 sm:w-4 sm:h-4 mr-1 flex-shrink-0" />
                       <span className="truncate">{paper.authors}</span>
                     </div>
                     <div className="flex items-center justify-between text-sm text-gray-600 mb-3">
                       <div className="flex items-center">
-                        <Calendar className="w-4 h-4 mr-1" />
+                        <Calendar className="w-3 h-3 sm:w-4 sm:h-4 mr-1" />
                         <span>{paper.year_published}</span>
                       </div>
-                    </div>
-                    <div className="flex items-center justify-between mb-4">
                       <Badge variant="outline" className="text-xs">
-                        {paper.category}
+                        <span className="sm:hidden truncate block max-w-[80px]">
+                          {paper.category}
+                        </span>
+                        <span className="hidden sm:block">
+                          {paper.category}
+                        </span>
                       </Badge>
                     </div>
+                    
+                    {/* Status Badge */}
+                    {renderStatusBadge(paper) && (
+                      <div className="mb-3">
+                        {renderStatusBadge(paper)}
+                      </div>
+                    )}
                   </div>
 
-                  <p className="text-gray-700 text-sm mb-4 line-clamp-3">{paper.abstract}</p>
+                  <p className="text-gray-700 text-sm mb-3 sm:mb-4 line-clamp-3">{paper.abstract}</p>
 
-                  <div className="flex gap-2">
-                    <Button size="sm" onClick={() => handleReadPaper(paper)} className="flex-1">
-                      <FileText className="w-4 h-4 mr-1" />
-                      Read Paper
+                  <div className="flex items-center justify-end gap-2">
+                    <Button 
+                      size="sm" 
+                      onClick={() => handleReadPaper(paper)} 
+                      className="w-9 h-9 p-0 rounded-full"
+                      title="Read paper"
+                    >
+                      <FileText className="w-4 h-4" />
                     </Button>
                     <Button
                       variant="outline"
@@ -293,16 +310,17 @@ const BookmarksPage = () => {
                         e.stopPropagation();
                         handleViewCitationTree(paper)
                       }}
-                      className="flex-1"
+                      className="w-9 h-9 p-0 rounded-full"
+                      title="View citation tree"
                     >
-                      <GitBranch className="w-4 h-4 mr-1" />
-                      Citation Tree
+                      <GitBranch className="w-4 h-4" />
                     </Button>
                     <Button
                       variant="outline"
                       size="sm"
                       onClick={() => handleRemoveBookmark(paper.bookmark_id)}
-                      className="text-red-600 hover:text-red-700 hover:bg-red-50"
+                      className="w-9 h-9 p-0 rounded-full text-red-600 hover:text-red-700 hover:bg-red-50"
+                      title="Remove bookmark"
                     >
                       <Trash2 className="w-4 h-4" />
                     </Button>
@@ -314,10 +332,10 @@ const BookmarksPage = () => {
         ) : (
           <div className="col-span-full">
             <Card>
-              <CardContent className="p-12 text-center">
-                <BookOpen className="w-12 h-12 text-gray-400 mx-auto mb-4" />
-                <h3 className="text-lg font-medium text-gray-900 mb-2">No bookmarks found</h3>
-                <p className="text-gray-600">
+              <CardContent className="p-8 sm:p-12 text-center">
+                <BookOpen className="w-8 h-8 sm:w-12 sm:h-12 text-gray-400 mx-auto mb-4" />
+                <h3 className="text-base sm:text-lg font-medium text-gray-900 mb-2">No bookmarks found</h3>
+                <p className="text-sm sm:text-base text-gray-600 px-2">
                   {searchTerm ? "Try adjusting your search terms" : "You haven't bookmarked any papers yet"}
                 </p>
               </CardContent>
@@ -328,21 +346,21 @@ const BookmarksPage = () => {
 
       {/* Paper Details Modal */}
       <Dialog open={isModalOpen} onOpenChange={setIsModalOpen}>
-        <DialogContent className="max-w-4xl max-h-[80vh] overflow-y-auto">
+        <DialogContent className="max-w-4xl max-h-[95vh] sm:max-h-[80vh] overflow-y-auto mx-3 sm:mx-auto">
           {selectedPaper && (
             <>
               {/* Debug: log selectedPaper to inspect status and file_path */}
               {console.log('DEBUG selectedPaper:', selectedPaper)}
               <DialogHeader>
-                <DialogTitle className="text-xl font-bold text-gray-900 pr-8">{selectedPaper.title}</DialogTitle>
+                <DialogTitle className="text-lg sm:text-xl font-bold text-gray-900 pr-8 leading-tight">{selectedPaper.title}</DialogTitle>
               </DialogHeader>
               <div className="space-y-4">
-                <div className="flex items-center justify-between text-sm text-gray-600">
-                  <div className="flex items-center">
-                    <User className="w-4 h-4 mr-1" />
-                    <span>Authors: {selectedPaper.authors}</span>
+                <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 sm:gap-4 text-sm text-gray-600">
+                  <div className="flex items-start sm:items-center">
+                    <User className="w-4 h-4 mr-1 flex-shrink-0 mt-0.5 sm:mt-0" />
+                    <span className="break-words">Authors: {selectedPaper.authors}</span>
                   </div>
-                  <div className="flex items-center gap-4">
+                  <div className="flex flex-col xs:flex-row xs:items-center gap-2 xs:gap-4">
                     <div className="flex items-center">
                       <Calendar className="w-4 h-4 mr-1" />
                       <span>Year: {selectedPaper.year_published}</span>
@@ -354,32 +372,35 @@ const BookmarksPage = () => {
                   </div>
                 </div>
 
-                <div className="flex items-center gap-2">
+                <div className="flex flex-wrap items-center gap-2">
                   <Badge variant="outline">{selectedPaper.category}</Badge>
                   {renderStatusBadge(selectedPaper)}
                 </div>
 
                 <div>
                   <h4 className="font-semibold text-gray-900 mb-2">Abstract</h4>
-                  <p className="text-gray-700 leading-relaxed">{selectedPaper.abstract}</p>
+                  <p className="text-sm sm:text-base text-gray-700 leading-relaxed">{selectedPaper.abstract}</p>
                 </div>
 
-                <div className="flex gap-3 pt-4">
+                <div className="flex flex-col sm:flex-row gap-3 pt-4">
                   {renderModalActionButton(selectedPaper)}
                   <Button
                     variant="outline"
                     onClick={() => handleViewCitationTree(selectedPaper)}
+                    className="text-sm sm:text-base"
                   >
                     <GitBranch className="w-4 h-4 mr-2" />
-                    Citation Tree
+                    <span className="hidden xs:inline">Citation Tree</span>
+                    <span className="xs:hidden">Citations</span>
                   </Button>
                   <Button
                     onClick={() => handleRemoveBookmark(selectedPaper.bookmark_id)}
                     variant="outline"
-                    className="text-red-600 hover:text-red-700 hover:bg-red-50"
+                    className="text-red-600 hover:text-red-700 hover:bg-red-50 text-sm sm:text-base"
                   >
                     <Trash2 className="w-4 h-4 mr-2" />
-                    Remove Bookmark
+                    <span className="hidden xs:inline">Remove Bookmark</span>
+                    <span className="xs:hidden">Remove</span>
                   </Button>
                 </div>
               </div>

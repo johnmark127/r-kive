@@ -156,50 +156,50 @@ const GuidelinesPage = () => {
   }
 
   return (
-	<div className="p-6 space-y-6 bg-gray-50 min-h-screen">
+	<div className="space-y-4 sm:space-y-6 bg-gray-50 min-h-screen">
       {/* Header */}
-      <div className="bg-white rounded-lg p-6 shadow-sm border">
+      <div className="bg-white rounded-lg p-4 sm:p-6 shadow-sm border">
         <div>
-          <h1 className="text-2xl font-bold text-gray-900 mb-1">Research Guidelines</h1>
-          <p className="text-gray-600">Essential information for conducting research</p>
+          <h1 className="text-xl sm:text-2xl font-bold text-gray-900 mb-1">Research Guidelines</h1>
+          <p className="text-sm sm:text-base text-gray-600">Essential information for conducting research</p>
         </div>
       </div>
 
       {/* Research Process */}
       <Card>
-        <CardHeader>
+        <CardHeader className="p-4 sm:p-6">
           <div className="flex items-center">
-            <ClipboardCheck className="w-5 h-5 text-blue-600 mr-2" />
-            <CardTitle className="text-lg font-semibold">Research Process</CardTitle>
+            <ClipboardCheck className="w-4 h-4 sm:w-5 sm:h-5 text-blue-600 mr-2" />
+            <CardTitle className="text-base sm:text-lg font-semibold">Research Process</CardTitle>
           </div>
         </CardHeader>
-        <CardContent>
-          <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        <CardContent className="p-4 sm:p-6">
+          <div className="grid grid-cols-1 sm:grid-cols-1 lg:grid-cols-3 gap-4 sm:gap-6">
             {researchProcess.map((process, index) => {
               const Icon = process.icon
               return (
-                <div key={index} className="bg-gray-50 rounded-lg p-6 border">
-                  <div className="flex items-center justify-between mb-4">
+                <div key={index} className="bg-gray-50 rounded-lg p-4 sm:p-6 border">
+                  <div className="flex items-center justify-between mb-3 sm:mb-4">
                     <div className="flex items-center">
-                      <div className="w-8 h-8 bg-blue-600 rounded-full flex items-center justify-center text-white font-bold text-sm mr-3">
+                      <div className="w-6 h-6 sm:w-8 sm:h-8 bg-blue-600 rounded-full flex items-center justify-center text-white font-bold text-xs sm:text-sm mr-2 sm:mr-3">
                         {process.step}
                       </div>
-                      <Icon className="w-5 h-5 text-blue-600" />
+                      <Icon className="w-4 h-4 sm:w-5 sm:h-5 text-blue-600" />
                     </div>
                     <Badge
                       variant={getStatusBadge(process.status).variant}
-                      className={getStatusBadge(process.status).className}
+                      className={`${getStatusBadge(process.status).className} text-xs`}
                     >
                       {process.status}
                     </Badge>
                   </div>
-                  <h3 className="font-semibold text-gray-900 mb-2">{process.title}</h3>
-                  <p className="text-sm text-gray-600 mb-4">{process.description}</p>
+                  <h3 className="font-semibold text-gray-900 mb-2 text-sm sm:text-base">{process.title}</h3>
+                  <p className="text-xs sm:text-sm text-gray-600 mb-3 sm:mb-4">{process.description}</p>
                   <ul className="space-y-2">
                     {process.guidelines.map((guideline, idx) => (
-                      <li key={idx} className="flex items-start text-sm text-gray-700">
-                        <CheckCircle className="w-4 h-4 text-green-600 mr-2 mt-0.5 flex-shrink-0" />
-                        {guideline}
+                      <li key={idx} className="flex items-start text-xs sm:text-sm text-gray-700">
+                        <CheckCircle className="w-3 h-3 sm:w-4 sm:h-4 text-green-600 mr-2 mt-0.5 flex-shrink-0" />
+                        <span className="leading-relaxed">{guideline}</span>
                       </li>
                     ))}
                   </ul>
@@ -212,22 +212,22 @@ const GuidelinesPage = () => {
 
       {/* Documentation Guidelines */}
       <Card>
-        <CardHeader>
+        <CardHeader className="p-4 sm:p-6">
           <div className="flex items-center">
-            <FileText className="w-5 h-5 text-blue-600 mr-2" />
-            <CardTitle className="text-lg font-semibold">Documentation Guidelines</CardTitle>
+            <FileText className="w-4 h-4 sm:w-5 sm:h-5 text-blue-600 mr-2" />
+            <CardTitle className="text-base sm:text-lg font-semibold">Documentation Guidelines</CardTitle>
           </div>
         </CardHeader>
-        <CardContent>
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        <CardContent className="p-4 sm:p-6">
+          <div className="grid grid-cols-1 sm:grid-cols-1 lg:grid-cols-2 gap-4 sm:gap-6">
             {documentationGuidelines.map((section, index) => (
-              <div key={index} className="bg-gray-50 rounded-lg p-6 border">
-                <h3 className="font-semibold text-gray-900 mb-4">{section.category}</h3>
-                <ul className="space-y-3">
+              <div key={index} className="bg-gray-50 rounded-lg p-4 sm:p-6 border">
+                <h3 className="font-semibold text-gray-900 mb-3 sm:mb-4 text-sm sm:text-base">{section.category}</h3>
+                <ul className="space-y-2 sm:space-y-3">
                   {section.requirements.map((requirement, idx) => (
-                    <li key={idx} className="flex items-start text-sm text-gray-700">
-                      <CheckCircle className="w-4 h-4 text-green-600 mr-2 mt-0.5 flex-shrink-0" />
-                      {requirement}
+                    <li key={idx} className="flex items-start text-xs sm:text-sm text-gray-700">
+                      <CheckCircle className="w-3 h-3 sm:w-4 sm:h-4 text-green-600 mr-2 mt-0.5 flex-shrink-0" />
+                      <span className="leading-relaxed">{requirement}</span>
                     </li>
                   ))}
                 </ul>
@@ -239,29 +239,29 @@ const GuidelinesPage = () => {
 
       {/* Important Deadlines */}
       <Card>
-        <CardHeader>
+        <CardHeader className="p-4 sm:p-6">
           <div className="flex items-center">
-            <Calendar className="w-5 h-5 text-blue-600 mr-2" />
-            <CardTitle className="text-lg font-semibold">Important Deadlines</CardTitle>
+            <Calendar className="w-4 h-4 sm:w-5 sm:h-5 text-blue-600 mr-2" />
+            <CardTitle className="text-base sm:text-lg font-semibold">Important Deadlines</CardTitle>
           </div>
         </CardHeader>
-        <CardContent>
-          <div className="space-y-4">
+        <CardContent className="p-4 sm:p-6">
+          <div className="space-y-3 sm:space-y-4">
             {importantDeadlines.map((deadline, index) => (
-              <div key={index} className="flex items-center justify-between p-4 bg-gray-50 rounded-lg border">
+              <div key={index} className="flex flex-col sm:flex-row sm:items-center sm:justify-between p-3 sm:p-4 bg-gray-50 rounded-lg border gap-3 sm:gap-0">
                 <div className="flex items-center">
-                  <div className="w-10 h-10 bg-blue-50 rounded-lg flex items-center justify-center mr-4">
+                  <div className="w-8 h-8 sm:w-10 sm:h-10 bg-blue-50 rounded-lg flex items-center justify-center mr-3 sm:mr-4 flex-shrink-0">
                     {getStatusIcon(deadline.status)}
                   </div>
-                  <div>
-                    <h3 className="font-semibold text-gray-900">{deadline.milestone}</h3>
-                    <p className="text-sm text-gray-600">{deadline.description}</p>
+                  <div className="min-w-0 flex-1">
+                    <h3 className="font-semibold text-gray-900 text-sm sm:text-base">{deadline.milestone}</h3>
+                    <p className="text-xs sm:text-sm text-gray-600 break-words">{deadline.description}</p>
                   </div>
                 </div>
-                <div className="text-right">
+                <div className="flex justify-end sm:text-right">
                   <Badge
                     variant={getStatusBadge(deadline.status).variant}
-                    className={getStatusBadge(deadline.status).className}
+                    className={`${getStatusBadge(deadline.status).className} text-xs`}
                   >
                     {deadline.date}
                   </Badge>
@@ -274,25 +274,25 @@ const GuidelinesPage = () => {
 
       {/* Additional Resources */}
       <Card>
-        <CardHeader>
+        <CardHeader className="p-4 sm:p-6">
           <div className="flex items-center">
-            <BookOpen className="w-5 h-5 text-blue-600 mr-2" />
-            <CardTitle className="text-lg font-semibold">Additional Resources</CardTitle>
+            <BookOpen className="w-4 h-4 sm:w-5 sm:h-5 text-blue-600 mr-2" />
+            <CardTitle className="text-base sm:text-lg font-semibold">Additional Resources</CardTitle>
           </div>
         </CardHeader>
-        <CardContent>
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-            <div className="p-4 bg-blue-50 rounded-lg border border-blue-200">
-              <h4 className="font-semibold text-blue-900 mb-2">Citation Styles</h4>
-              <p className="text-sm text-blue-700">APA, MLA, Chicago, IEEE, and Harvard citation formats</p>
+        <CardContent className="p-4 sm:p-6">
+          <div className="grid grid-cols-1 sm:grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-4">
+            <div className="p-3 sm:p-4 bg-blue-50 rounded-lg border border-blue-200">
+              <h4 className="font-semibold text-blue-900 mb-2 text-sm sm:text-base">Citation Styles</h4>
+              <p className="text-xs sm:text-sm text-blue-700">APA, MLA, Chicago, IEEE, and Harvard citation formats</p>
             </div>
-            <div className="p-4 bg-green-50 rounded-lg border border-green-200">
-              <h4 className="font-semibold text-green-900 mb-2">Research Templates</h4>
-              <p className="text-sm text-green-700">Pre-formatted templates for different research types</p>
+            <div className="p-3 sm:p-4 bg-green-50 rounded-lg border border-green-200">
+              <h4 className="font-semibold text-green-900 mb-2 text-sm sm:text-base">Research Templates</h4>
+              <p className="text-xs sm:text-sm text-green-700">Pre-formatted templates for different research types</p>
             </div>
-            <div className="p-4 bg-purple-50 rounded-lg border border-purple-200">
-              <h4 className="font-semibold text-purple-900 mb-2">Writing Support</h4>
-              <p className="text-sm text-purple-700">Grammar guides and academic writing resources</p>
+            <div className="p-3 sm:p-4 bg-purple-50 rounded-lg border border-purple-200">
+              <h4 className="font-semibold text-purple-900 mb-2 text-sm sm:text-base">Writing Support</h4>
+              <p className="text-xs sm:text-sm text-purple-700">Grammar guides and academic writing resources</p>
             </div>
           </div>
         </CardContent>
