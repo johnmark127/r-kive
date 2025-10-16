@@ -99,6 +99,14 @@ function About() {
 
     return (
         <main>
+            {/* Mobile Back Button */}
+            <div className="mobile-back-button d-block d-md-none">
+                <Link to="/" className="btn-back-mobile">
+                    <i className="bi-arrow-left"></i>
+                    <span>Back to Home</span>
+                </Link>
+            </div>
+
             {/* Header Section */}
             <div className="header-container">
                 <div className="nav-container">

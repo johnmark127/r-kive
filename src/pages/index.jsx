@@ -11,8 +11,10 @@ function Index() {
     const headerRef = useRef(null);
     const loginBtnRef = useRef(null);
     const [isAuthModalOpen, setIsAuthModalOpen] = useState(false);
+    const [isMobileNavOpen, setIsMobileNavOpen] = useState(false);
     const { categories, loading } = useBrowseTopics();
     const [selectedCategoryIdx, setSelectedCategoryIdx] = useState(0);
+    const [currentPaperIdx, setCurrentPaperIdx] = useState(0);
 
     const openAuthModal = () => {
         setIsAuthModalOpen(true);
@@ -20,6 +22,32 @@ function Index() {
 
     const closeAuthModal = () => {
         setIsAuthModalOpen(false);
+    };
+
+    const toggleMobileNav = () => {
+        setIsMobileNavOpen(!isMobileNavOpen);
+    };
+
+    const nextPaper = () => {
+        if (categories[selectedCategoryIdx] && categories[selectedCategoryIdx].papers.length > 0) {
+            setCurrentPaperIdx((prev) => 
+                prev < categories[selectedCategoryIdx].papers.length - 1 ? prev + 1 : 0
+            );
+        }
+    };
+
+    const prevPaper = () => {
+        if (categories[selectedCategoryIdx] && categories[selectedCategoryIdx].papers.length > 0) {
+            setCurrentPaperIdx((prev) => 
+                prev > 0 ? prev - 1 : categories[selectedCategoryIdx].papers.length - 1
+            );
+        }
+    };
+
+    // Reset paper index when category changes
+    const handleCategoryChange = (newIdx) => {
+        setSelectedCategoryIdx(newIdx);
+        setCurrentPaperIdx(0);
     };
 
     useEffect(() => {
@@ -43,25 +71,29 @@ function Index() {
         <main>
             <div className="header-container" ref={headerRef}>
                 <div className="nav-container">
-                    <div className="navigation">
+                    <button className="mobile-nav-toggle d-md-none" onClick={toggleMobileNav}>
+                        ☰
+                    </button>
+
+                    <div className="logo-container">
+                        <a href="#section_1">
+                            <img src="/assets/images/finalg.jpg" alt="College Logo" className="logo" />
+                        </a>
+                    </div>
+                    
+                    <div className={`navigation ${isMobileNavOpen ? 'mobile-open' : ''}`}>
                         <div className="nav-links">
-                            <a href="#section_1" className="click-scroll" onClick={e => { e.preventDefault(); window.scrollTo({top: 0, behavior: 'smooth'}); }}>HOME</a>
-                            <a href="#section_2" className="click-scroll">BROWSE TOPICS</a>
-                            <a href="#section_3" className="click-scroll">HOW IT WORKS</a>
-                            <a href="#section_4" className="click-scroll">FAQS</a>
-                            <a href="#section_5" className="click-scroll">CONTACTS</a>
+                            <a href="#section_1" className="click-scroll" onClick={e => { e.preventDefault(); window.scrollTo({top: 0, behavior: 'smooth'}); setIsMobileNavOpen(false); }}>HOME</a>
+                            <a href="#section_2" className="click-scroll" onClick={() => setIsMobileNavOpen(false)}>BROWSE TOPICS</a>
+                            <a href="#section_3" className="click-scroll" onClick={() => setIsMobileNavOpen(false)}>HOW IT WORKS</a>
+                            <a href="#section_4" className="click-scroll" onClick={() => setIsMobileNavOpen(false)}>FAQS</a>
+                            <a href="#section_5" className="click-scroll" onClick={() => setIsMobileNavOpen(false)}>CONTACTS</a>
                         </div>
                     </div>
                     
                     <button className="login-btn" ref={loginBtnRef} onClick={openAuthModal}>
                         LOGIN
                     </button>
-                    
-                    <div className="logo-container">
-                        <a href="#section_1">
-                            <img src="/assets/images/finalg.jpg" alt="College Logo" className="logo" />
-                        </a>
-                    </div>
                 </div>
             </div>
 
@@ -72,10 +104,12 @@ function Index() {
                             <h1 className="text-white text-center display-4 fw-bold mb-3">Discover. Explore. Learn</h1>
                             <h4 className="text-white text-center mb-5 opacity-90">Your Gateway to OMSC Capstone Projects</h4>
                             <form method="get" className="custom-form mt-4 pt-2 mb-lg-0 mb-5" role="search" action="search_results.php">
-                                <div className="input-group input-group-lg">
-                                    <span className="input-group-text bi-search" id="basic-addon1"></span>
-                                    <input name="keyword" type="search" className="form-control" id="keyword" placeholder="Search Project Title, Author, Year ..." aria-label="Search" />
-                                    <button type="submit" className="form-control">Search</button>
+                                <div className="modern-search-container">
+                                    <div className="search-input-wrapper">
+                                        <span className="search-icon">🔍</span>
+                                        <input name="keyword" type="search" className="modern-search-input" id="keyword" placeholder="Search Project Title, Author, Year ..." aria-label="Search" />
+                                        <button type="submit" className="modern-search-button">Search</button>
+                                    </div>
                                 </div>
                             </form>
                         </div>
@@ -125,14 +159,14 @@ function Index() {
                     </div>
                 </div>
 
-                {/* Tab Bar */}
-                <div className="container-fluid mb-4">
+                {/* Desktop Tab Bar */}
+                <div className="container-fluid mb-4 d-none d-md-block">
                     <div className="row">
                         <div className="d-flex justify-content-center align-items-center gap-4 flex-wrap" style={{ fontSize: '1.2rem', fontWeight: 500 }}>
                             {categories.map((cat, idx) => (
                                 <div
                                     key={cat.id}
-                                    onClick={() => setSelectedCategoryIdx(idx)}
+                                    onClick={() => handleCategoryChange(idx)}
                                     style={{
                                         cursor: 'pointer',
                                         borderBottom: selectedCategoryIdx === idx ? '3px solid #222' : 'none',
@@ -162,36 +196,102 @@ function Index() {
                     </div>
                 </div>
 
+                {/* Mobile Dropdown */}
+                <div className="container mb-4 d-block d-md-none">
+                    <div className="row justify-content-center">
+                        <div className="col-12">
+                            <div className="category-dropdown-wrapper">
+                                <select 
+                                    className="category-dropdown"
+                                    value={selectedCategoryIdx}
+                                    onChange={(e) => handleCategoryChange(parseInt(e.target.value))}
+                                >
+                                    {categories.map((cat, idx) => (
+                                        <option key={cat.id} value={idx}>
+                                            {cat.name} ({cat.paper_count} papers)
+                                        </option>
+                                    ))}
+                                </select>
+                                <div className="dropdown-arrow">▼</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
                 {/* Papers for selected category */}
                 <div className="container">
-                    <div className="row justify-content-center">
-                        {loading ? (
-                            <div className="text-center py-5">
-                                <div className="spinner-border text-primary" role="status">
-                                    <span className="visually-hidden">Loading...</span>
-                                </div>
-                                <p className="mt-3">Loading topics...</p>
+                    {loading ? (
+                        <div className="text-center py-5">
+                            <div className="spinner-border text-primary" role="status">
+                                <span className="visually-hidden">Loading...</span>
                             </div>
-                        ) : (
-                            categories[selectedCategoryIdx] && categories[selectedCategoryIdx].papers.length > 0 ? (
-                                categories[selectedCategoryIdx].papers.slice(0, 3).map((paper, i) => (
-                                    <div key={i} className="col-lg-4 col-md-6 col-12 mb-4 d-flex justify-content-center">
-                                        <div className="card shadow-sm" style={{ width: 350, borderRadius: 20, minHeight: 340 }}>
-                                            <div className="card-body">
-                                                <h5 className="card-title mb-2" style={{ fontWeight: 700, fontSize: '1.25rem', color: '#245884' }}>{paper.title}</h5>
-                                                <div className="text-muted mb-1" style={{ fontSize: 15 }}>Year: {paper.year}</div>
-                                                {paper.image && (
-                                                    <img src={paper.image} alt="paper" style={{ width: '100%', height: 160, objectFit: 'cover', borderRadius: 10, margin: '10px 0' }} />
-                                                )}
+                            <p className="mt-3">Loading topics...</p>
+                        </div>
+                    ) : (
+                        categories[selectedCategoryIdx] && categories[selectedCategoryIdx].papers.length > 0 ? (
+                            <>
+                                {/* Desktop: Show 3 papers in grid */}
+                                <div className="papers-grid-container d-none d-md-block">
+                                    <div className="row justify-content-center">
+                                        {categories[selectedCategoryIdx].papers.slice(0, 3).map((paper, i) => (
+                                            <div key={i} className="col-lg-4 col-md-6 col-12 mb-4 d-flex justify-content-center">
+                                                <div className="card shadow-sm" style={{ width: 350, borderRadius: 20, minHeight: 340 }}>
+                                                    <div className="card-body">
+                                                        <h5 className="card-title mb-2" style={{ fontWeight: 700, fontSize: '1.25rem', color: '#245884' }}>{paper.title}</h5>
+                                                        <div className="text-muted mb-1" style={{ fontSize: 15 }}>Year: {paper.year}</div>
+                                                        {paper.image && (
+                                                            <img src={paper.image} alt="paper" style={{ width: '100%', height: 160, objectFit: 'cover', borderRadius: 10, margin: '10px 0' }} />
+                                                        )}
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        ))}
+                                    </div>
+                                </div>
+
+                                {/* Mobile: Show 1 paper with navigation */}
+                                <div className="papers-carousel-container d-block d-md-none">
+                                    <button className="carousel-nav-btn carousel-prev" onClick={prevPaper}>
+                                        ❮
+                                    </button>
+                                    
+                                    <div className="papers-carousel">
+                                        <div className="paper-card active">
+                                            <div className="card shadow-sm">
+                                                <div className="card-body">
+                                                    <h5 className="card-title mb-2">
+                                                        {categories[selectedCategoryIdx].papers[currentPaperIdx].title}
+                                                    </h5>
+                                                    <div className="text-muted mb-1">
+                                                        Year: {categories[selectedCategoryIdx].papers[currentPaperIdx].year}
+                                                    </div>
+                                                    {categories[selectedCategoryIdx].papers[currentPaperIdx].image && (
+                                                        <img 
+                                                            src={categories[selectedCategoryIdx].papers[currentPaperIdx].image} 
+                                                            alt="paper" 
+                                                            className="paper-image" 
+                                                        />
+                                                    )}
+                                                </div>
                                             </div>
                                         </div>
                                     </div>
-                                ))
-                            ) : (
-                                <div className="text-secondary text-center py-5">No papers found</div>
-                            )
-                        )}
-                    </div>
+
+                                    <button className="carousel-nav-btn carousel-next" onClick={nextPaper}>
+                                        ❯
+                                    </button>
+
+                                    <div className="carousel-indicators">
+                                        <span className="current-paper">{currentPaperIdx + 1}</span>
+                                        <span className="separator"> / </span>
+                                        <span className="total-papers">{categories[selectedCategoryIdx].papers.length}</span>
+                                    </div>
+                                </div>
+                            </>
+                        ) : (
+                            <div className="text-secondary text-center py-5">No papers found</div>
+                        )
+                    )}
                 </div>
             </section>
 
