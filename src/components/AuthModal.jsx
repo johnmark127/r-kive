@@ -254,9 +254,40 @@ const AuthModal = ({ isOpen, onClose }) => {
                                     'Login'
                                 )}
                             </button>
+                            
                             <div style={{ textAlign: 'center', marginTop: '12px', fontSize: '15px' }}>
                                 <a href="#" style={{ color: '#245884', textDecoration: 'underline', fontWeight: '500' }} onClick={(e) => e.preventDefault()}>Terms of Use</a> and {' '}
                                 <a href="#" style={{ color: '#245884', textDecoration: 'underline', fontWeight: '500' }} onClick={(e) => e.preventDefault()}>Privacy Policy</a>.
+                            </div>
+
+                            {/* Mobile Signup Prompt */}
+                            <div className="mobile-signup-prompt" style={{ textAlign: 'center', margin: '20px 0', display: 'none' }}>
+                                <p style={{ fontSize: '14px', color: '#666', marginBottom: '8px' }}>Don't have an account?</p>
+                                <button 
+                                    type="button"
+                                    onClick={() => setIsRegisterMode(true)}
+                                    style={{
+                                        background: 'none',
+                                        border: '2px solid #667eea',
+                                        color: '#667eea',
+                                        padding: '8px 20px',
+                                        borderRadius: '20px',
+                                        fontSize: '14px',
+                                        fontWeight: '600',
+                                        cursor: 'pointer',
+                                        transition: 'all 0.3s ease'
+                                    }}
+                                    onMouseOver={(e) => {
+                                        e.target.style.background = '#667eea';
+                                        e.target.style.color = 'white';
+                                    }}
+                                    onMouseOut={(e) => {
+                                        e.target.style.background = 'none';
+                                        e.target.style.color = '#667eea';
+                                    }}
+                                >
+                                    Create Account
+                                </button>
                             </div>
                         </form>
                     </div>
@@ -340,9 +371,40 @@ const AuthModal = ({ isOpen, onClose }) => {
                                     'Register'
                                 )}
                             </button>
+                            
                             <div style={{ textAlign: 'center', marginTop: '12px', fontSize: '15px' }}>
                                 <a href="#" style={{ color: '#245884', textDecoration: 'underline', fontWeight: '500' }} onClick={(e) => e.preventDefault()}>Terms of Use</a> and {' '}
                                 <a href="#" style={{ color: '#245884', textDecoration: 'underline', fontWeight: '500' }} onClick={(e) => e.preventDefault()}>Privacy Policy</a>.
+                            </div>
+
+                            {/* Mobile Login Prompt */}
+                            <div className="mobile-login-prompt" style={{ textAlign: 'center', margin: '20px 0', display: 'none' }}>
+                                <p style={{ fontSize: '14px', color: '#666', marginBottom: '8px' }}>Already have an account?</p>
+                                <button 
+                                    type="button"
+                                    onClick={() => setIsRegisterMode(false)}
+                                    style={{
+                                        background: 'none',
+                                        border: '2px solid #667eea',
+                                        color: '#667eea',
+                                        padding: '8px 20px',
+                                        borderRadius: '20px',
+                                        fontSize: '14px',
+                                        fontWeight: '600',
+                                        cursor: 'pointer',
+                                        transition: 'all 0.3s ease'
+                                    }}
+                                    onMouseOver={(e) => {
+                                        e.target.style.background = '#667eea';
+                                        e.target.style.color = 'white';
+                                    }}
+                                    onMouseOut={(e) => {
+                                        e.target.style.background = 'none';
+                                        e.target.style.color = '#667eea';
+                                    }}
+                                >
+                                    Sign In
+                                </button>
                             </div>
                         </form>
                     </div>
@@ -412,6 +474,22 @@ const AuthModal = ({ isOpen, onClose }) => {
                                 Login
                             </button>
                         </div>
+                    </div>
+
+                    {/* Simple Mobile Toggle */}
+                    <div className="form-toggle" style={{ display: isForgotPasswordMode ? 'none' : 'flex' }}>
+                        <button 
+                            className={!isRegisterMode ? 'active' : ''}
+                            onClick={() => setIsRegisterMode(false)}
+                        >
+                            Login
+                        </button>
+                        <button 
+                            className={isRegisterMode ? 'active' : ''}
+                            onClick={() => setIsRegisterMode(true)}
+                        >
+                            Register
+                        </button>
                     </div>
                 </div>
             </div>

@@ -40,6 +40,31 @@
   color: #245884;
 }
 
+/* Modern Mobile Close Button */
+@media screen and (max-width: 650px) {
+  .close-modal {
+    top: 20px;
+    right: 20px;
+    width: 36px;
+    height: 36px;
+    background: rgba(255, 255, 255, 0.9);
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.5rem;
+    color: #333;
+    box-shadow: 0 2px 12px rgba(0, 0, 0, 0.15);
+    backdrop-filter: blur(10px);
+    transition: all 0.3s ease;
+  }
+
+  .close-modal:hover {
+    background: white;
+    transform: scale(1.1);
+  }
+}
+
 .modal-container {
   position: relative;
   width: 850px;
@@ -419,64 +444,338 @@
   box-shadow: none;
 }
 
-/* Responsive Design */
+/* Modern Mobile Design */
 @media screen and (max-width: 900px) {
+  .modal-overlay {
+    background: rgba(0, 0, 0, 0.6);
+    backdrop-filter: blur(8px);
+    animation: fadeIn 0.3s ease-out;
+  }
+
   .modal-container {
-    width: 98vw;
-    height: 98vh;
+    width: 95vw;
+    height: 85vh;
+    border-radius: 20px;
+    background: white;
+    box-shadow: 0 20px 40px rgba(0, 0, 0, 0.2);
+    animation: slideUp 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+  }
+
+  @keyframes fadeIn {
+    from {
+      opacity: 0;
+    }
+    to {
+      opacity: 1;
+    }
+  }
+
+  @keyframes slideUp {
+    from {
+      opacity: 0;
+      transform: translateY(50px) scale(0.95);
+    }
+    to {
+      opacity: 1;
+      transform: translateY(0) scale(1);
+    }
   }
 }
 
 @media screen and (max-width: 650px) {
   .modal-container {
-    height: calc(100vh - 40px);
+    width: 100vw;
+    height: 100vh;
+    border-radius: 0;
+    margin: 0;
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    display: flex;
+    flex-direction: row;
+    overflow: hidden;
+    position: relative;
   }
 
   .modal-container .form-box {
-    bottom: 0;
+    position: relative;
+    right: auto;
+    bottom: auto;
     width: 100%;
-    height: 70%;
+    height: 100%;
+    background: white;
+    border-radius: 0;
+    padding: 40px 30px;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    z-index: 3;
+    transform: translateX(0);
+    transition: transform 0.4s cubic-bezier(0.4, 0, 0.2, 1);
   }
 
-  .modal-container.active .form-box {
-    right: 0;
-    bottom: 30%;
+  .modal-container.active .form-box.login {
+    transform: translateX(-100%);
+    z-index: 2;
   }
 
-  .modal-container .toggle-box::before {
+  .modal-container.active .form-box.register {
+    transform: translateX(0);
+    visibility: visible;
+    z-index: 4;
+  }
+
+  .modal-container .form-box.register {
+    position: absolute;
+    top: 0;
     left: 0;
-    top: -270%;
     width: 100%;
-    height: 300%;
-    border-radius: 20vw;
+    height: 100%;
+    transform: translateX(100%);
+    visibility: visible;
+    background: white;
+    border-radius: 0;
+    box-shadow: none;
+    margin: 0;
+    padding: 40px 30px;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    z-index: 3;
+    transition: transform 0.4s cubic-bezier(0.4, 0, 0.2, 1);
   }
 
-  .modal-container.active .toggle-box::before {
-    left: 0;
-    top: 70%;
+  /* Override desktop register styles for mobile */
+  .modal-container .form-box.register h1 {
+    font-size: 28px;
+    font-weight: 700;
+    color: #1a1a1a;
+    margin-bottom: 8px;
+    text-align: center;
   }
 
-  .modal-container.active .toggle-panel.toggle-left {
-    left: 0;
-    top: -30%;
+  .modal-container .form-box.register .input-box {
+    margin: 16px 0;
+  }
+
+  .modal-container .form-box.register .input-box input {
+    height: 54px;
+    padding: 16px 50px 16px 20px;
+    font-size: 16px;
+    border: 2px solid #f0f0f0;
+    border-radius: 12px;
+    background: #fafafa;
+    transition: all 0.3s ease;
+  }
+
+  .modal-container .form-box.register .input-box input:focus {
+    border-color: #667eea;
+    background: white;
+    box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+  }
+
+  .modal-container .form-box.register .btn {
+    height: 54px;
+    border-radius: 12px;
+    font-size: 16px;
+    font-weight: 600;
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    box-shadow: 0 4px 15px rgba(102, 126, 234, 0.3);
+    transition: all 0.3s ease;
+    margin-top: 16px;
+  }
+
+  .modal-container .form-box.register .btn:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 6px 20px rgba(102, 126, 234, 0.4);
+  }
+
+  .modal-container .toggle-box {
+    display: none !important;
+    visibility: hidden;
+    opacity: 0;
   }
 
   .modal-container .toggle-panel {
-    width: 100%;
-    height: 30%;
+    display: none !important;
+    visibility: hidden;
+    opacity: 0;
   }
 
-  .modal-container .toggle-panel.toggle-left {
+  .modal-container h1 {
+    font-size: 28px;
+    font-weight: 700;
+    color: #1a1a1a;
+    margin-bottom: 8px;
+    text-align: center;
+  }
+
+  .modal-container p {
+    font-size: 16px;
+    color: #666;
+    text-align: center;
+    margin-bottom: 32px;
+  }
+
+  .modal-container .input-box {
+    margin: 16px 0;
+  }
+
+  .modal-container .input-box input {
+    height: 54px;
+    padding: 16px 50px 16px 20px;
+    font-size: 16px;
+    border: 2px solid #f0f0f0;
+    border-radius: 12px;
+    background: #fafafa;
+    transition: all 0.3s ease;
+  }
+
+  .modal-container .input-box input:focus {
+    border-color: #667eea;
+    background: white;
+    box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+  }
+
+  .modal-container .btn {
+    height: 54px;
+    border-radius: 12px;
+    font-size: 16px;
+    font-weight: 600;
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    box-shadow: 0 4px 15px rgba(102, 126, 234, 0.3);
+    transition: all 0.3s ease;
+    margin-top: 16px;
+  }
+
+  .modal-container .btn:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 6px 20px rgba(102, 126, 234, 0.4);
+  }
+
+  .modal-container .forgot-link {
+    text-align: center;
+    margin: 16px 0 24px 0;
+  }
+
+  .modal-container .forgot-link a {
+    font-size: 15px;
+    font-weight: 500;
+    color: #667eea;
+  }
+
+  /* Forgot Password Mobile Styling */
+  .modal-container .form-box.forgot-password {
+    position: absolute;
     top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: white;
+    border-radius: 0;
+    padding: 40px 30px;
+    margin: 0;
+    box-shadow: none;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    transform: translateX(100%);
+    transition: transform 0.4s cubic-bezier(0.4, 0, 0.2, 1);
   }
 
-  .modal-container .toggle-panel.toggle-right {
-    right: 0;
-    bottom: -30%;
+  .modal-container .form-box.forgot-password.active {
+    transform: translateX(0);
   }
 
-  .modal-container.active .toggle-panel.toggle-right {
-    bottom: 0;
+  .modal-container .back-to-login {
+    text-align: center;
+    margin: 20px 0;
+  }
+
+  .modal-container .back-to-login a {
+    font-size: 15px;
+    font-weight: 500;
+    color: #667eea;
+    text-decoration: none;
+  }
+
+  /* Simple Toggle Navigation */
+  .form-toggle {
+    position: absolute;
+    bottom: 40px;
+    left: 50%;
+    transform: translateX(-50%);
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    background: rgba(255, 255, 255, 0.95);
+    backdrop-filter: blur(10px);
+    border-radius: 25px;
+    padding: 6px;
+    z-index: 5;
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1);
+    border: 1px solid rgba(255, 255, 255, 0.2);
+  }
+
+  .form-toggle button {
+    padding: 12px 20px;
+    border: none;
+    border-radius: 20px;
+    background: transparent;
+    color: #666;
+    font-size: 15px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    min-width: 80px;
+  }
+
+  .form-toggle button.active {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    color: white;
+    box-shadow: 0 2px 10px rgba(102, 126, 234, 0.3);
+    transform: scale(1.02);
+  }
+
+  .form-toggle button:not(.active):hover {
+    color: #667eea;
+    background: rgba(102, 126, 234, 0.1);
+  }
+
+  /* Show mobile prompts only on mobile */
+  .mobile-signup-prompt,
+  .mobile-login-prompt {
+    display: block !important;
+  }
+}
+
+/* Landscape Mobile Optimization */
+@media screen and (max-width: 900px) and (max-height: 500px) {
+  .modal-container {
+    height: 100vh;
+    border-radius: 0;
+  }
+
+  .modal-container .form-box {
+    padding: 20px 30px;
+    justify-content: flex-start;
+    overflow-y: auto;
+  }
+
+  .modal-container h1 {
+    font-size: 24px;
+    margin-bottom: 16px;
+  }
+
+  .modal-container .input-box {
+    margin: 12px 0;
+  }
+
+  .modal-container .input-box input {
+    height: 48px;
+  }
+
+  .modal-container .btn {
+    height: 48px;
+    margin-top: 12px;
   }
 }
 
