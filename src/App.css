@@ -526,6 +526,99 @@ main {
     border: 1px solid #dee2e6 !important;
   }
 
+  /* Force light mode for FAQ section on mobile */
+  .faq-section {
+    background-color: #f0f8ff !important;
+    color: #333333 !important;
+  }
+
+  .dark .faq-section {
+    background-color: #f0f8ff !important;
+    color: #333333 !important;
+  }
+
+  .faq-section h2 {
+    color: #333333 !important;
+  }
+
+  .dark .faq-section h2 {
+    color: #333333 !important;
+  }
+
+  /* Force FAQ cards to be white */
+  .faq-section .bg-white,
+  .faq-section [style*="background"],
+  .faq-section div[style*="cursor: pointer"] {
+    background-color: #ffffff !important;
+    color: #333333 !important;
+  }
+
+  .dark .faq-section .bg-white,
+  .dark .faq-section [style*="background"],
+  .dark .faq-section div[style*="cursor: pointer"] {
+    background-color: #ffffff !important;
+    color: #333333 !important;
+  }
+
+  /* Force FAQ text colors */
+  .faq-section .fw-bold {
+    color: #245884 !important;
+  }
+
+  .dark .faq-section .fw-bold {
+    color: #245884 !important;
+  }
+
+  /* Force contact section to be light */
+  .contact-section {
+    background-color: #f0f8ff !important;
+    color: #333333 !important;
+  }
+
+  .dark .contact-section {
+    background-color: #f0f8ff !important;
+    color: #333333 !important;
+  }
+
+  .contact-section h2 {
+    color: #333333 !important;
+  }
+
+  .dark .contact-section h2 {
+    color: #333333 !important;
+  }
+
+  /* Force footer to be light */
+  .site-footer {
+    background-color: #f1f1f1 !important;
+    color: #333333 !important;
+  }
+
+  .dark .site-footer {
+    background-color: #f1f1f1 !important;
+    color: #333333 !important;
+  }
+
+  .site-footer h6,
+  .site-footer p,
+  .site-footer a {
+    color: #333333 !important;
+  }
+
+  .dark .site-footer h6,
+  .dark .site-footer p,
+  .dark .site-footer a {
+    color: #333333 !important;
+  }
+
+  .site-footer .site-footer-link {
+    color: #245884 !important;
+  }
+
+  .dark .site-footer .site-footer-link {
+    color: #245884 !important;
+  }
+
   .header-container {
     height: 60px;
     padding: 0;
