@@ -476,21 +476,6 @@ const AuthModal = ({ isOpen, onClose }) => {
                         </div>
                     </div>
 
-                    {/* Simple Mobile Toggle */}
-                    <div className="form-toggle" style={{ display: isForgotPasswordMode ? 'none' : 'flex' }}>
-                        <button 
-                            className={!isRegisterMode ? 'active' : ''}
-                            onClick={() => setIsRegisterMode(false)}
-                        >
-                            Login
-                        </button>
-                        <button 
-                            className={isRegisterMode ? 'active' : ''}
-                            onClick={() => setIsRegisterMode(true)}
-                        >
-                            Register
-                        </button>
-                    </div>
                 </div>
             </div>
         </div>
