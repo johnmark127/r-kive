@@ -918,18 +918,23 @@ const ResearchHub = () => {
   // Render functions for each tab
   const renderProjectsTab = () => (
     <div>
-      {/* Stats Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+      {/* Stats Cards - Compact Mobile Layout */}
+      <div className="grid grid-cols-2 sm:grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-6 mb-4 sm:mb-8">
         {stats.map((stat, index) => (
           <Card key={index} className="bg-white shadow-sm hover:shadow-md transition-shadow">
-            <CardContent className="p-6">
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-sm font-medium text-gray-600 mb-1">{stat.title}</p>
-                  <p className="text-3xl font-bold text-gray-900">{stat.value}</p>
+            <CardContent className="p-3 sm:p-6">
+              <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 sm:gap-0">
+                <div className="flex items-center gap-2 sm:flex-col sm:items-start sm:gap-1">
+                  <div className={`p-1.5 sm:p-3 rounded-lg ${stat.color} sm:hidden`}>
+                    <stat.icon className="h-3 w-3 sm:h-6 sm:w-6" />
+                  </div>
+                  <div className="flex-1 sm:flex-initial">
+                    <p className="text-xs sm:text-sm font-medium text-gray-600 mb-0.5 sm:mb-1 line-clamp-1">{stat.title}</p>
+                    <p className="text-lg sm:text-3xl font-bold text-gray-900">{stat.value}</p>
+                  </div>
                 </div>
-                <div className={`p-3 rounded-lg ${stat.color}`}>
-                  <stat.icon className="h-6 w-6" />
+                <div className={`p-2 sm:p-3 rounded-lg ${stat.color} hidden sm:block`}>
+                  <stat.icon className="h-4 w-4 sm:h-6 sm:w-6" />
                 </div>
               </div>
             </CardContent>
@@ -937,26 +942,130 @@ const ResearchHub = () => {
         ))}
       </div>
 
-      {/* Projects Grid */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-2 xl:grid-cols-3 gap-8">
+      {/* Projects Grid - Mobile-First with Better Exposure */}
+      <div className="grid grid-cols-1 sm:grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-4 sm:gap-8">
         {loading ? (
           // Loading skeleton
           [1, 2, 3, 4].map((i) => (
             <Card key={i} className="animate-pulse">
-              <div className="h-48 bg-gray-200 rounded-t-lg"></div>
-              <CardContent className="p-4">
-                <div className="h-4 bg-gray-200 rounded w-3/4 mb-2"></div>
-                <div className="h-3 bg-gray-200 rounded w-full mb-2"></div>
-                <div className="h-3 bg-gray-200 rounded w-2/3 mb-4"></div>
-                <div className="h-8 bg-gray-200 rounded w-full"></div>
+              <div className="h-32 sm:h-48 bg-gray-200 rounded-t-lg"></div>
+              <CardContent className="p-3 sm:p-4">
+                <div className="h-3 sm:h-4 bg-gray-200 rounded w-3/4 mb-2"></div>
+                <div className="h-2 sm:h-3 bg-gray-200 rounded w-full mb-2"></div>
+                <div className="h-2 sm:h-3 bg-gray-200 rounded w-2/3 mb-4"></div>
+                <div className="h-6 sm:h-8 bg-gray-200 rounded w-full"></div>
               </CardContent>
             </Card>
           ))
         ) : projects.length > 0 ? (
           projects.map((project) => (
-            <Card key={project.id} className="group relative hover:shadow-lg transition-all duration-300 hover:scale-[1.02] overflow-hidden cursor-pointer">
-              <CardContent className="p-6 relative">
-                {/* Status Badge - Top Right Corner */}
+            <Card key={project.id} className="group relative hover:shadow-lg transition-all duration-300 sm:hover:scale-[1.02] overflow-hidden cursor-pointer">
+              {/* Mobile: Show image first, then content */}
+              <div className="block sm:hidden">
+                {/* Mobile Image Section */}
+                <div className="relative h-40 overflow-hidden">
+                  {project.image_url ? (
+                    <img 
+                      src={project.image_url} 
+                      alt={project.title}
+                      className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-105"
+                    />
+                  ) : (
+                    <div className="w-full h-full flex items-center justify-center bg-gradient-to-br from-gray-100 to-gray-200">
+                      <div className="text-center">
+                        <FlaskConical className="h-12 w-12 mx-auto text-gray-400 mb-2" />
+                        <p className="text-sm text-gray-500">Research Image</p>
+                      </div>
+                    </div>
+                  )}
+                  
+                  {/* Status Badge - Mobile Top Right */}
+                  <div className="absolute top-2 right-2 z-20">
+                    {(() => {
+                      const hasAnyChapter = [1, 2, 3, 4, 5].some(num => 
+                        project[`chapter_${num}_content`] && project[`chapter_${num}_content`].trim().length > 0
+                      );
+                      
+                      const completedChapters = [1, 2, 3, 4, 5].filter(num => 
+                        project[`chapter_${num}_completed`]
+                      ).length;
+                      
+                      if (completedChapters === 5) {
+                        return (
+                          <Badge className="bg-green-100 text-green-800 shadow-md text-xs">
+                            <CheckCircle className="w-2.5 h-2.5 mr-1" />
+                            Completed
+                          </Badge>
+                        );
+                      } else if (hasAnyChapter) {
+                        return (
+                          <Badge className="bg-blue-100 text-blue-800 shadow-md text-xs">
+                            <Clock className="w-2.5 h-2.5 mr-1" />
+                            In Progress
+                          </Badge>
+                        );
+                      } else {
+                        return (
+                          <Badge className="bg-yellow-100 text-yellow-800 shadow-md text-xs">
+                            <FileText className="w-2.5 h-2.5 mr-1" />
+                            Planning
+                          </Badge>
+                        );
+                      }
+                    })()}
+                  </div>
+                </div>
+                
+                {/* Mobile Content */}
+                <CardContent className="p-4">
+                  <div className="space-y-3">
+                    {/* Title */}
+                    <h3 className="font-semibold text-gray-900 text-base leading-tight line-clamp-2">
+                      {project.title}
+                    </h3>
+                    
+                    {/* Author & Year - Horizontal Layout */}
+                    <div className="flex items-center justify-between text-xs text-gray-600">
+                      <div className="flex items-center">
+                        <Users className="w-3 h-3 mr-1" />
+                        <span className="truncate max-w-[120px]">{user?.user_metadata?.full_name || user?.email || 'Student'}</span>
+                      </div>
+                      <div className="flex items-center">
+                        <Calendar className="w-3 h-3 mr-1" />
+                        <span>{project.start_date ? new Date(project.start_date).getFullYear() : new Date().getFullYear()}</span>
+                      </div>
+                    </div>
+                    
+                    {/* Progress Stats - Mobile */}
+                    <div className="grid grid-cols-3 gap-2 text-center">
+                      <div className="text-xs">
+                        <div className="font-semibold text-blue-600">{[1, 2, 3, 4, 5].filter(num => project[`chapter_${num}_completed`]).length}</div>
+                        <div className="text-gray-500">Chapters</div>
+                      </div>
+                      <div className="text-xs">
+                        <div className="font-semibold text-green-600">{Math.round(([1, 2, 3, 4, 5].filter(num => project[`chapter_${num}_completed`]).length / 5) * 100)}%</div>
+                        <div className="text-gray-500">Complete</div>
+                      </div>
+                      <div className="text-xs">
+                        <Button 
+                          size="sm"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            openViewProject(project);
+                          }}
+                          className="bg-blue-600 hover:bg-blue-700 h-6 px-2 text-xs"
+                        >
+                          View
+                        </Button>
+                      </div>
+                    </div>
+                  </div>
+                </CardContent>
+              </div>
+              
+              {/* Desktop Layout (Hidden on Mobile) */}
+              <CardContent className="hidden sm:block p-6 relative">
+                {/* Status Badge - Desktop Top Right Corner */}
                 <div className="absolute top-4 right-4 z-20">
                   {(() => {
                     // Check if any chapter has content
@@ -1066,20 +1175,21 @@ const ResearchHub = () => {
             </Card>
           ))
         ) : (
-          <div className="col-span-full text-center py-12">
-            <FlaskConical className="h-16 w-16 text-gray-300 mx-auto mb-4" />
-            <h3 className="text-lg font-medium text-gray-900 mb-2">
+          <div className="col-span-full text-center py-8 sm:py-12">
+            <FlaskConical className="h-12 w-12 sm:h-16 sm:w-16 text-gray-300 mx-auto mb-3 sm:mb-4" />
+            <h3 className="text-base sm:text-lg font-medium text-gray-900 mb-2">
               No research projects yet
             </h3>
-            <p className="text-gray-600 mb-6">
+            <p className="text-sm sm:text-base text-gray-600 mb-4 sm:mb-6 px-4">
               Start your research journey by creating your first project
             </p>
             <Button 
-              className="bg-blue-600 hover:bg-blue-700"
+              className="bg-blue-600 hover:bg-blue-700 w-full sm:w-auto"
               onClick={() => setNewProjectDialogOpen(true)}
+              size="sm"
             >
-              <Plus className="h-4 w-4 mr-2" />
-              Create Your First Project
+              <Plus className="h-3 w-3 sm:h-4 sm:w-4 mr-2" />
+              <span className="text-sm">Create Your First Project</span>
             </Button>
           </div>
         )}
@@ -2199,43 +2309,43 @@ const ResearchHub = () => {
 
       {/* View Proposal Dialog */}
       <Dialog open={viewProposalDialogOpen} onOpenChange={setViewProposalDialogOpen}>
-        <DialogContent className="max-w-3xl max-h-[90vh] overflow-y-auto">
-          <DialogHeader>
-            <DialogTitle className="flex items-center gap-2">
-              <Eye className="h-5 w-5" />
-              Proposal Details
+        <DialogContent className="max-w-3xl max-h-[90vh] overflow-y-auto w-[95vw] sm:w-full">
+          <DialogHeader className="pb-3 sm:pb-6">
+            <DialogTitle className="flex items-center gap-2 text-base sm:text-lg">
+              <Eye className="h-4 w-4 sm:h-5 sm:w-5 flex-shrink-0" />
+              <span>Proposal Details</span>
             </DialogTitle>
           </DialogHeader>
           {viewProposal && (
-            <div className="space-y-6">
+            <div className="space-y-4 sm:space-y-6">
               {/* Proposal Header */}
-              <div className="border-b pb-4">
-                <div className="flex items-start justify-between mb-2">
-                  <h2 className="text-xl font-semibold text-gray-900">{viewProposal.title}</h2>
-                  <Badge className={getProposalStatusColor(viewProposal.status)}>
+              <div className="border-b pb-3 sm:pb-4">
+                <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-2 sm:gap-4 mb-3 sm:mb-2">
+                  <h2 className="text-lg sm:text-xl font-semibold text-gray-900 line-clamp-2 flex-1">{viewProposal.title}</h2>
+                  <Badge className={`${getProposalStatusColor(viewProposal.status)} self-start sm:self-auto flex-shrink-0`}>
                     {getProposalStatusLabel(viewProposal.status)}
                   </Badge>
                 </div>
-                <p className="text-gray-600">{viewProposal.description}</p>
+                <p className="text-sm sm:text-base text-gray-600 line-clamp-3 sm:line-clamp-none">{viewProposal.description}</p>
               </div>
 
               {/* Proposal Info */}
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                <div className="space-y-4">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 sm:gap-6">
+                <div className="space-y-3 sm:space-y-4">
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">Category</label>
-                    <p className="text-gray-900">{viewProposal.category || 'Not specified'}</p>
+                    <label className="block text-xs sm:text-sm font-medium text-gray-700 mb-1">Category</label>
+                    <p className="text-sm sm:text-base text-gray-900">{viewProposal.category || 'Not specified'}</p>
                   </div>
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">Research Topic</label>
-                    <p className="text-gray-900">{viewProposal.research_topic || 'Not specified'}</p>
+                    <label className="block text-xs sm:text-sm font-medium text-gray-700 mb-1">Research Topic</label>
+                    <p className="text-sm sm:text-base text-gray-900 line-clamp-2 sm:line-clamp-none">{viewProposal.research_topic || 'Not specified'}</p>
                   </div>
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">Submitted Date</label>
-                    <p className="text-gray-900">
+                    <label className="block text-xs sm:text-sm font-medium text-gray-700 mb-1">Submitted Date</label>
+                    <p className="text-sm sm:text-base text-gray-900">
                       {new Date(viewProposal.submitted_at).toLocaleDateString('en-US', {
                         year: 'numeric',
-                        month: 'long',
+                        month: 'short',
                         day: 'numeric',
                         hour: '2-digit',
                         minute: '2-digit'
@@ -2243,9 +2353,9 @@ const ResearchHub = () => {
                     </p>
                   </div>
                 </div>
-                <div className="space-y-4">
+                <div className="space-y-3 sm:space-y-4">
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">Status</label>
+                    <label className="block text-xs sm:text-sm font-medium text-gray-700 mb-1">Status</label>
                     <div className="flex items-center gap-2">
                       <Badge className={getProposalStatusColor(viewProposal.status)}>
                         {getProposalStatusLabel(viewProposal.status)}
@@ -2253,20 +2363,20 @@ const ResearchHub = () => {
                     </div>
                   </div>
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">Last Updated</label>
-                    <p className="text-gray-900">
+                    <label className="block text-xs sm:text-sm font-medium text-gray-700 mb-1">Last Updated</label>
+                    <p className="text-sm sm:text-base text-gray-900">
                       {new Date(viewProposal.updated_at || viewProposal.submitted_at).toLocaleDateString('en-US', {
                         year: 'numeric',
-                        month: 'long',
+                        month: 'short',
                         day: 'numeric'
                       })}
                     </p>
                   </div>
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">Review Progress</label>
-                    <div className="w-full bg-gray-200 rounded-full h-3 mb-1">
+                    <label className="block text-xs sm:text-sm font-medium text-gray-700 mb-1">Review Progress</label>
+                    <div className="w-full bg-gray-200 rounded-full h-2 sm:h-3 mb-1">
                       <div 
-                        className={`h-3 rounded-full transition-all duration-300 ${
+                        className={`h-2 sm:h-3 rounded-full transition-all duration-300 ${
                           viewProposal.status === 'approved' ? 'bg-green-500 w-full' :
                           viewProposal.status === 'under_review' ? 'bg-blue-500 w-2/3' :
                           viewProposal.status === 'rejected' ? 'bg-red-500 w-1/3' :
@@ -2274,7 +2384,7 @@ const ResearchHub = () => {
                         }`}
                       ></div>
                     </div>
-                    <p className="text-xs text-gray-600">
+                    <p className="text-xs text-gray-600 line-clamp-2 sm:line-clamp-none">
                       {viewProposal.status === 'approved' ? 'Approved - Ready to start research' :
                        viewProposal.status === 'under_review' ? 'Currently being reviewed by advisers' :
                        viewProposal.status === 'rejected' ? 'Requires revision based on feedback' :
@@ -2286,36 +2396,36 @@ const ResearchHub = () => {
 
               {/* Adviser Feedback Section */}
               {viewProposal.feedback && (
-                <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
-                  <h3 className="text-sm font-medium text-blue-900 mb-2 flex items-center gap-2">
-                    <MessageSquare className="h-4 w-4" />
-                    Adviser Feedback
+                <div className="bg-blue-50 border border-blue-200 rounded-lg p-3 sm:p-4">
+                  <h3 className="text-xs sm:text-sm font-medium text-blue-900 mb-2 flex items-center gap-2">
+                    <MessageSquare className="h-3 w-3 sm:h-4 sm:w-4 flex-shrink-0" />
+                    <span>Adviser Feedback</span>
                   </h3>
-                  <p className="text-sm text-blue-800">{viewProposal.feedback}</p>
+                  <p className="text-xs sm:text-sm text-blue-800 leading-relaxed">{viewProposal.feedback}</p>
                 </div>
               )}
 
               {/* Status Timeline */}
               <div>
-                <h3 className="text-lg font-semibold text-gray-900 mb-4">Review Timeline</h3>
-                <div className="space-y-3">
+                <h3 className="text-base sm:text-lg font-semibold text-gray-900 mb-3 sm:mb-4">Review Timeline</h3>
+                <div className="space-y-2 sm:space-y-3">
                   <div className="flex items-center gap-3">
-                    <div className="w-3 h-3 rounded-full bg-green-500"></div>
-                    <div className="flex-1">
-                      <p className="font-medium text-sm">Proposal Submitted</p>
+                    <div className="w-2.5 h-2.5 sm:w-3 sm:h-3 rounded-full bg-green-500 flex-shrink-0"></div>
+                    <div className="flex-1 min-w-0">
+                      <p className="font-medium text-xs sm:text-sm">Proposal Submitted</p>
                       <p className="text-xs text-gray-600">
                         {new Date(viewProposal.submitted_at).toLocaleDateString()}
                       </p>
                     </div>
                   </div>
                   <div className="flex items-center gap-3">
-                    <div className={`w-3 h-3 rounded-full ${
+                    <div className={`w-2.5 h-2.5 sm:w-3 sm:h-3 rounded-full flex-shrink-0 ${
                       ['under_review', 'approved', 'rejected'].includes(viewProposal.status) 
                         ? 'bg-green-500' 
                         : 'bg-gray-300'
                     }`}></div>
-                    <div className="flex-1">
-                      <p className="font-medium text-sm">Under Review</p>
+                    <div className="flex-1 min-w-0">
+                      <p className="font-medium text-xs sm:text-sm">Under Review</p>
                       <p className="text-xs text-gray-600">
                         {['under_review', 'approved', 'rejected'].includes(viewProposal.status)
                           ? 'In progress'
@@ -2324,12 +2434,12 @@ const ResearchHub = () => {
                     </div>
                   </div>
                   <div className="flex items-center gap-3">
-                    <div className={`w-3 h-3 rounded-full ${
+                    <div className={`w-2.5 h-2.5 sm:w-3 sm:h-3 rounded-full flex-shrink-0 ${
                       viewProposal.status === 'approved' ? 'bg-green-500' : 'bg-gray-300'
                     }`}></div>
-                    <div className="flex-1">
-                      <p className="font-medium text-sm">Final Decision</p>
-                      <p className="text-xs text-gray-600">
+                    <div className="flex-1 min-w-0">
+                      <p className="font-medium text-xs sm:text-sm">Final Decision</p>
+                      <p className="text-xs text-gray-600 line-clamp-1 sm:line-clamp-none">
                         {viewProposal.status === 'approved' ? 'Approved - Ready to start project' :
                          viewProposal.status === 'rejected' ? 'Revision required' :
                          'Pending review completion'}
@@ -2340,27 +2450,31 @@ const ResearchHub = () => {
               </div>
 
               {/* Action Buttons */}
-              <div className="flex justify-end gap-2 pt-4 border-t">
+              <div className="flex flex-col sm:flex-row justify-end gap-2 sm:gap-2 pt-3 sm:pt-4 border-t">
                 <Button
                   variant="outline"
                   onClick={() => setViewProposalDialogOpen(false)}
+                  className="w-full sm:w-auto order-3 sm:order-1"
+                  size="sm"
                 >
                   Close
                 </Button>
                 {viewProposal.status === 'rejected' && (
                   <Button
-                    className="bg-orange-600 hover:bg-orange-700"
+                    className="bg-orange-600 hover:bg-orange-700 w-full sm:w-auto order-1 sm:order-2"
+                    size="sm"
                   >
-                    <Edit3 className="h-4 w-4 mr-2" />
-                    Revise Proposal
+                    <Edit3 className="h-3 w-3 sm:h-4 sm:w-4 mr-2" />
+                    <span className="text-sm">Revise Proposal</span>
                   </Button>
                 )}
                 {viewProposal.status === 'approved' && (
                   <Button
-                    className="bg-green-600 hover:bg-green-700"
+                    className="bg-green-600 hover:bg-green-700 w-full sm:w-auto order-1 sm:order-2"
+                    size="sm"
                   >
-                    <Plus className="h-4 w-4 mr-2" />
-                    Create Project
+                    <Plus className="h-3 w-3 sm:h-4 sm:w-4 mr-2" />
+                    <span className="text-sm">Create Project</span>
                   </Button>
                 )}
               </div>
