@@ -46,8 +46,7 @@ function Index() {
     }, [searchValue]);
 
     const handleSuggestionClick = (name) => {
-        setSearchValue(name);
-        setShowSuggestions(false);
+        window.location.href = `/search?query=${encodeURIComponent(name)}`;
     };
 
     const openAuthModal = () => {
@@ -85,6 +84,14 @@ function Index() {
     };
 
     useEffect(() => {
+        // Auto-open login/register modal if redirected from SearchResults
+        const params = new URLSearchParams(window.location.search);
+        if (params.get('login') === '1') {
+            setIsAuthModalOpen(true);
+        }
+        // Optionally, you can set register mode in AuthModal if needed
+        // For now, just open modal; user can switch between login/register inside modal
+
         const handleScroll = () => {
             const atTop = window.scrollY <= 10;
             if (headerRef.current) {

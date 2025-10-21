@@ -1,6 +1,7 @@
 import React from "react"
 import Index from "./pages/index"
 import About from "./pages/about"
+import SearchResults from "./pages/SearchResults"
 import DashboardLayout from "./layouts/DashboardLayout"
 import AdminDashboard from "./pages/dashboard/admin/AdminDashboard"
 // import Analytics from "./pages/dashboard/admin/Analytics"
@@ -54,6 +55,7 @@ function App() {
                     {/* Public Routes */}
                     <Route path='/' element={<Index/>}/>
                     <Route path='/about' element={<About/>}/>
+                    <Route path='/search' element={<SearchResults />} />
                     
                     {/* Dashboard Routes */}
                     <Route path="/admin" element={<DashboardLayout />}>
