@@ -4,6 +4,7 @@ import AuthModal from "../components/AuthModal";
 import ToastManager from "../components/ToastManager";
 import "../components/AuthModal.css";
 import { useBrowseTopics } from "@/hooks/useBrowseTopics";
+import { supabase } from "@/supabase/client";
 
 
 function Index() {
@@ -15,6 +16,39 @@ function Index() {
     const { categories, loading } = useBrowseTopics();
     const [selectedCategoryIdx, setSelectedCategoryIdx] = useState(0);
     const [currentPaperIdx, setCurrentPaperIdx] = useState(0);
+
+    // Search bar autocomplete state
+    const [searchValue, setSearchValue] = useState("");
+    const [suggestions, setSuggestions] = useState([]);
+    const [showSuggestions, setShowSuggestions] = useState(false);
+
+    // Fetch suggestions from Supabase as user types
+    useEffect(() => {
+        if (searchValue.trim().length === 0) {
+            setSuggestions([]);
+            setShowSuggestions(false);
+            return;
+        }
+        let active = true;
+        const fetchSuggestions = async () => {
+            const { data, error } = await supabase
+                .from("research_papers")
+                .select("title, authors")
+                .ilike("title", `%${searchValue}%`)
+                .limit(5);
+            if (active) {
+                setSuggestions(data ? data.map(d => ({ title: d.title, authors: d.authors || "Unknown" })) : []);
+                setShowSuggestions(true);
+            }
+        };
+        fetchSuggestions();
+        return () => { active = false; };
+    }, [searchValue]);
+
+    const handleSuggestionClick = (name) => {
+        setSearchValue(name);
+        setShowSuggestions(false);
+    };
 
     const openAuthModal = () => {
         setIsAuthModalOpen(true);
@@ -104,12 +138,65 @@ function Index() {
                             <h1 className="text-white text-center display-4 fw-bold mb-3">Discover. Explore. Learn</h1>
                             <h4 className="text-white text-center mb-5 opacity-90">Your Gateway to OMSC Capstone Projects</h4>
                             <form method="get" className="custom-form mt-4 pt-2 mb-lg-0 mb-5" role="search" action="search_results.php">
-                                <div className="modern-search-container">
+                                <div className="modern-search-container" style={{ position: 'relative' }}>
                                     <div className="search-input-wrapper">
                                         <span className="search-icon">🔍</span>
-                                        <input name="keyword" type="search" className="modern-search-input" id="keyword" placeholder="Search Project Title, Author, Year ..." aria-label="Search" />
+                                        <input
+                                            name="keyword"
+                                            type="search"
+                                            className="modern-search-input"
+                                            id="keyword"
+                                            placeholder="Search Project Title, Author, Year ..."
+                                            aria-label="Search"
+                                            autoComplete="off"
+                                            value={searchValue}
+                                            onChange={e => setSearchValue(e.target.value)}
+                                            onFocus={() => { if (suggestions.length > 0) setShowSuggestions(true); }}
+                                            onBlur={() => setTimeout(() => setShowSuggestions(false), 150)}
+                                        />
                                         <button type="submit" className="modern-search-button">Search</button>
                                     </div>
+                                    {showSuggestions && suggestions.length > 0 && (
+                                        <ul className="search-suggestions-list" style={{
+                                            position: 'absolute',
+                                            top: '100%',
+                                            left: 0,
+                                            right: 0,
+                                            background: '#fff',
+                                            border: '1px solid #e3e8ee',
+                                            boxShadow: '0 4px 16px rgba(36,88,132,0.08)',
+                                            borderRadius: 12,
+                                            margin: 0,
+                                            padding: '4px 0',
+                                            zIndex: 10,
+                                            listStyle: 'none',
+                                            minWidth: 0,
+                                        }}>
+                                            {suggestions.map((name, idx) => (
+                                                <li
+                                                    key={idx}
+                                                    style={{
+                                                        display: 'flex',
+                                                        justifyContent: 'space-between',
+                                                        alignItems: 'center',
+                                                        padding: '10px 18px',
+                                                        cursor: 'pointer',
+                                                        fontSize: '0.98rem',
+                                                        color: '#222',
+                                                        background: 'none',
+                                                        borderBottom: idx !== suggestions.length - 1 ? '1px solid #f3f3f3' : 'none',
+                                                        transition: 'background 0.15s',
+                                                    }}
+                                                    onMouseDown={() => handleSuggestionClick(suggestions[idx].title)}
+                                                    onMouseOver={e => e.currentTarget.style.background = '#f5f8fa'}
+                                                    onMouseOut={e => e.currentTarget.style.background = 'none'}
+                                                >
+                                                    <span style={{ flex: 1, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{suggestions[idx].title}</span>
+                                                    <span style={{ marginLeft: 16, color: '#357ab8', fontSize: '0.92em', fontWeight: 500, maxWidth: 120, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{suggestions[idx].authors}</span>
+                                                </li>
+                                            ))}
+                                        </ul>
+                                    )}
                                 </div>
                             </form>
                         </div>
