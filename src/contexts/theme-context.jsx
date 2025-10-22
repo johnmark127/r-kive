@@ -7,7 +7,7 @@ const ThemeProviderContext = createContext({
 
 export function ThemeProvider({
   children,
-  defaultTheme = "system",
+  defaultTheme = "light", // Changed from "system" to "light"
   storageKey = "ui-theme",
   ...props
 }) {
@@ -25,11 +25,9 @@ export function ThemeProvider({
         .matches
         ? "dark"
         : "light";
-
       root.classList.add(systemTheme);
       return;
     }
-
     root.classList.add(theme);
   }, [theme]);
 
