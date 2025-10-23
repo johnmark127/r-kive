@@ -5,7 +5,7 @@ const CATEGORY_MAP = {
   "Database expert": "Database Expert",
   "website": "Website",
   "mobile app": "Mobile App",
-  "kai (E-Learning/Computer-Aided Instruction Systems)": "Kai",
+  "cai (E-Learning/Computer-Aided Instruction Systems)": "CAI",
   "software/hardware": "Software/Hardware",
 };
 
@@ -13,7 +13,7 @@ const DEFAULT_CATEGORIES = [
   { id: "database-expert", name: "Database Expert", original_name: "Database expert" },
   { id: "website", name: "Website", original_name: "website" },
   { id: "mobile-app", name: "Mobile App", original_name: "mobile app" },
-  { id: "kai", name: "Kai", original_name: "kai (E-Learning/Computer-Aided Instruction Systems)" },
+  { id: "cai", name: "CAI", original_name: "cai (E-Learning/Computer-Aided Instruction Systems)" },
   { id: "software-hardware", name: "Software/Hardware", original_name: "software/hardware" },
 ];
 

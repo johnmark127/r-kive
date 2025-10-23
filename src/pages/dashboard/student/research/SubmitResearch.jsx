@@ -50,7 +50,7 @@ const SubmitResearch = () => {
     "Website",
     "Database Expert",
     "Software/Hardware", 
-    "KAI",
+  "CAI",
     "Mobile Application"
   ]
 

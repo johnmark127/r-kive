@@ -38,7 +38,7 @@ const UploadPage = () => {
     "Database expert",
     "website",
     "mobile app",
-    "kai (E-Learning/Computer-Aided Instruction Systems)",
+  "cai (E-Learning/Computer-Aided Instruction Systems)",
     "software/hardware",
   ];
 
@@ -106,7 +106,7 @@ const UploadPage = () => {
         'mobile', 'android', 'ios', 'app', 'application', 'smartphone',
         'phone', 'mobile application', 'mobile-based'
       ],
-      "kai (E-Learning/Computer-Aided Instruction Systems)": [
+  "cai (E-Learning/Computer-Aided Instruction Systems)": [
         'e-learning', 'elearning', 'learning', 'education', 'teaching',
         'instruction', 'tutorial', 'course', 'training', 'cai', 'computer aided',
         'educational', 'academic'

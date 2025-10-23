@@ -2530,7 +2530,7 @@ const ResearchHub = () => {
                 >
                   <option value="">Select a category</option>
                   <option value="Database Expert">Database Expert</option>
-                  <option value="Kai">Kai</option>
+                  <option value="CAI">CAI</option>
                   <option value="Mobile App">Mobile App</option>
                   <option value="Website">Website</option>
                   <option value="Hardware/Software">Hardware/Software</option>
