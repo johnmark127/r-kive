@@ -336,6 +336,58 @@ function Index() {
                                                         {paper.image && (
                                                             <img src={paper.image} alt="paper" style={{ width: '100%', height: 160, objectFit: 'cover', borderRadius: 10, margin: '10px 0' }} />
                                                         )}
+                                                        {/* Abstract */}
+                                                        {paper.abstract && (
+                                                            <div className="mt-2" style={{ fontSize: 15, color: '#222', minHeight: 40 }}>
+                                                                {paper.abstract.length > 180 ? paper.abstract.slice(0, 180) + '...' : paper.abstract}
+                                                            </div>
+                                                        )}
+                                                        {/* Action Buttons */}
+                                                        <div className="d-flex gap-2 mt-3">
+                                                            <button
+                                                                className="modern-btn"
+                                                                style={{
+                                                                    background: '#245884',
+                                                                    color: '#fff',
+                                                                    border: 'none',
+                                                                    fontWeight: 500,
+                                                                    fontSize: 15,
+                                                                    borderRadius: 12,
+                                                                    padding: '8px 22px',
+                                                                    boxShadow: '0 2px 8px rgba(36,88,132,0.08)',
+                                                                    transition: 'background 0.18s, box-shadow 0.18s',
+                                                                    cursor: 'pointer',
+                                                                }}
+                                                                onMouseOver={e => { e.currentTarget.style.background = '#357ab8'; e.currentTarget.style.boxShadow = '0 4px 16px rgba(36,88,132,0.12)'; }}
+                                                                onMouseOut={e => { e.currentTarget.style.background = '#245884'; e.currentTarget.style.boxShadow = '0 2px 8px rgba(36,88,132,0.08)'; }}
+                                                                onClick={() => {
+                                                                    window.scrollTo({ top: 0, behavior: 'smooth' });
+                                                                    setTimeout(() => setIsAuthModalOpen(true), 400);
+                                                                }}
+                                                            >
+                                                                Read
+                                                            </button>
+                                                            <button
+                                                                className="modern-btn"
+                                                                style={{
+                                                                    background: '#f5f8fa',
+                                                                    color: '#245884',
+                                                                    border: '1px solid #e3e8ee',
+                                                                    fontWeight: 500,
+                                                                    fontSize: 15,
+                                                                    borderRadius: 12,
+                                                                    padding: '8px 22px',
+                                                                    boxShadow: '0 2px 8px rgba(36,88,132,0.08)',
+                                                                    transition: 'background 0.18s, box-shadow 0.18s',
+                                                                    cursor: 'pointer',
+                                                                }}
+                                                                onMouseOver={e => { e.currentTarget.style.background = '#e3e8ee'; e.currentTarget.style.boxShadow = '0 4px 16px rgba(36,88,132,0.12)'; }}
+                                                                onMouseOut={e => { e.currentTarget.style.background = '#f5f8fa'; e.currentTarget.style.boxShadow = '0 2px 8px rgba(36,88,132,0.08)'; }}
+                                                                onClick={() => window.location.href = `/citation/${paper.id}`}
+                                                            >
+                                                                View Citation
+                                                            </button>
+                                                        </div>
                                                     </div>
                                                 </div>
                                             </div>

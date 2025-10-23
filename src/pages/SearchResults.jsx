@@ -53,7 +53,7 @@ const SearchResults = () => {
   }, [query, category, year]);
 
   return (
-    <main>
+    <main className="no-invert">
       <div className="header-container">
         <div className="nav-container d-flex align-items-center" style={{ minHeight: '70px' }}>
           <a href="/" className="btn btn-light" style={{ fontWeight: 500, borderRadius: 24, padding: '6px 18px', fontSize: '1rem', boxShadow: '0 2px 8px rgba(36,88,132,0.10)', marginLeft: '32px' }}>
@@ -214,7 +214,7 @@ const SearchResults = () => {
           left: 0,
           width: '100vw',
           height: '100vh',
-          background: 'rgba(0,0,0,0.35)',
+            background: 'rgba(0,0,0,0.10)',
           zIndex: 9999,
           display: 'flex',
           alignItems: 'center',
