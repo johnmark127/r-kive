@@ -383,7 +383,10 @@ function Index() {
                                                                 }}
                                                                 onMouseOver={e => { e.currentTarget.style.background = '#e3e8ee'; e.currentTarget.style.boxShadow = '0 4px 16px rgba(36,88,132,0.12)'; }}
                                                                 onMouseOut={e => { e.currentTarget.style.background = '#f5f8fa'; e.currentTarget.style.boxShadow = '0 2px 8px rgba(36,88,132,0.08)'; }}
-                                                                onClick={() => window.location.href = `/citation/${paper.id}`}
+                                                                onClick={() => {
+                                                                    window.scrollTo({ top: 0, behavior: 'smooth' });
+                                                                    setTimeout(() => setIsAuthModalOpen(true), 400);
+                                                                }}
                                                             >
                                                                 View Citation
                                                             </button>
