@@ -1493,7 +1493,7 @@ const ResearchHub = () => {
           <div className="flex-1">
             <h1 className="text-xl sm:text-2xl font-bold text-gray-900 mb-1 flex items-center gap-2">
               <FlaskConical className="h-5 w-5 sm:h-6 sm:w-6 text-blue-600 flex-shrink-0" />
-              <span className="line-clamp-1">Research Hub 🔬</span>
+              <span className="line-clamp-1">Research Hub</span>
             </h1>
             <p className="text-sm sm:text-base text-gray-600 line-clamp-2">Complete research management - projects, proposals & progress tracking</p>
           </div>

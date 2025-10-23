@@ -409,7 +409,7 @@ const AdviserDashboard = () => {
       <div className="bg-white rounded-lg p-6 shadow-sm border">
         <div className="flex items-center justify-between">
           <div>
-            <h1 className="text-2xl font-bold text-gray-900 mb-1">Welcome back, Adviser 👨‍🏫</h1>
+            <h1 className="text-2xl font-bold text-gray-900 mb-1">Welcome back, Adviser</h1>
             <p className="text-gray-600">Monitor your assigned groups and provide guidance</p>
           </div>
           <Button

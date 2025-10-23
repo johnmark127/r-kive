@@ -621,7 +621,7 @@ const UserManagement = () => {
       <div className="bg-white rounded-lg p-6 shadow-sm border mb-6">
         <div className="flex items-center justify-between">
           <div>
-            <h1 className="text-2xl font-bold text-gray-900 mb-1">User Management Dashboard 👤</h1>
+            <h1 className="text-2xl font-bold text-gray-900 mb-1">User Management Dashboard</h1>
             <p className="text-gray-600">Comprehensive user account management and permissions control</p>
           </div>
         </div>

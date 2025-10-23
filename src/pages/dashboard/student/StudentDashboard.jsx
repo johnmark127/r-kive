@@ -233,7 +233,7 @@ const StudentDashboard = () => {
         <div className="flex items-center justify-between">
           <div>
             <h1 className="text-xl sm:text-2xl font-bold text-gray-900 mb-1 leading-tight">
-              Welcome back, {userProfile?.firstName || user?.user_metadata?.full_name?.split(' ')[0] || user?.email?.split('@')[0] || "Student"} 👋
+              Welcome back, {userProfile?.firstName || user?.user_metadata?.full_name?.split(' ')[0] || user?.email?.split('@')[0] || "Student"}
               {isResearchProponent && <span className="ml-2 text-lg"></span>}
             </h1>
             <p className="text-sm sm:text-base text-gray-600">

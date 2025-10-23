@@ -464,7 +464,7 @@ export default function GroupManagement() {
       <div className="bg-white rounded-lg p-6 shadow-sm border">
         <div className="flex items-center justify-between">
           <div>
-            <h1 className="text-2xl font-bold text-gray-900 mb-1">Group & Project Management 👥</h1>
+            <h1 className="text-2xl font-bold text-gray-900 mb-1">Group & Project Management</h1>
             <p className="text-gray-600">Monitor and manage all capstone project groups and their progress</p>
           </div>
           {/* Removed SA avatar icon */}

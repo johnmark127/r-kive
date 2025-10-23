@@ -541,7 +541,7 @@ const ProgressMonitoring = () => {
       <div className="bg-white rounded-lg p-6 shadow-sm border mb-6">
         <div className="flex items-center justify-between">
           <div>
-            <h1 className="text-2xl font-bold text-gray-900 mb-1">Progress Monitoring 📊</h1>
+            <h1 className="text-2xl font-bold text-gray-900 mb-1">Progress Monitoring</h1>
             <p className="text-gray-600">Track and monitor your assigned groups' project progress and research chapters</p>
           </div>
           <div className="flex items-center space-x-3">
