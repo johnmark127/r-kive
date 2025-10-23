@@ -6,7 +6,7 @@
   import Toast from "@/components/Toast";
   import { supabase } from "@/supabase/client";
   import * as pdfjsLib from 'pdfjs-dist';
-  import pdfjsWorker from 'pdfjs-dist/build/pdf.worker.min.mjs?url';
+  import pdfjsWorker from 'pdfjs-dist/build/pdf.worker.mjs?url';
 
 // Set PDF.js worker - use the bundled worker
 if (typeof window !== 'undefined') {

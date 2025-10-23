@@ -1,35 +1,33 @@
 import { createContext, useContext, useEffect, useState } from "react";
+import { useLocation } from "react-router-dom";
 
 const ThemeProviderContext = createContext({
-  theme: "system",
+  theme: "light",
   setTheme: () => null,
 });
 
 export function ThemeProvider({
   children,
-  defaultTheme = "light", // Changed from "system" to "light"
+  defaultTheme = "light",
   storageKey = "ui-theme",
   ...props
 }) {
+  const location = typeof window !== "undefined" ? window.location : { pathname: "/" };
   const [theme, setTheme] = useState(
     () => localStorage.getItem(storageKey) || defaultTheme
   );
 
   useEffect(() => {
     const root = window.document.documentElement;
-
-    root.classList.remove("light", "dark");
-
-    if (theme === "system") {
-      const systemTheme = window.matchMedia("(prefers-color-scheme: dark)")
-        .matches
-        ? "dark"
-        : "light";
-      root.classList.add(systemTheme);
-      return;
+    root.classList.remove("light", "inverted");
+    // Only apply inverted theme if not on landing page
+    const isLandingPage = location.pathname === "/";
+    if (theme === "inverted" && !isLandingPage) {
+      root.classList.add("inverted");
+    } else {
+      root.classList.add("light");
     }
-    root.classList.add(theme);
-  }, [theme]);
+  }, [theme, location.pathname]);
 
   const value = {
     theme,
