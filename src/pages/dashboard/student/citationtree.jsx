@@ -99,6 +99,13 @@ export default function CitationTreePage() {
     return Math.min(1, jaccardSimilarity + categoryBonus + yearBonus);
   };
 
+  // Shorten long titles for node labels while keeping full title in tooltip
+  const truncateTitle = (str, max) => {
+    if (!str) return ""
+    if (typeof str !== 'string') str = String(str)
+    return str.length > max ? str.slice(0, max - 1) + '…' : str
+  }
+
   // Fetch semantically related papers
   const fetchSemanticallySimilarPapers = async (mainPaper) => {
     try {
@@ -572,11 +579,14 @@ export default function CitationTreePage() {
       .append("text")
       .attr("dy", 25)
       .attr("text-anchor", "middle")
-      .text((d) => d.name)
+  .text((d) => truncateTitle(d.name, d.isMain ? 36 : 28))
       .style("font-size", "12px")
       .style("font-family", "system-ui, -apple-system, sans-serif")
       .style("fill", "#374151")
       .style("font-weight", (d) => (d.isMain ? "600" : "400"))
+
+    // Add native tooltip containing the full title
+    node.append("title").text((d) => d.name)
 
   // Removed axis labels for 'MORE CITATIONS' and 'MORE RECENTLY PUBLISHED'
 
