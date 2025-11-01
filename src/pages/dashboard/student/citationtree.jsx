@@ -1050,6 +1050,7 @@ export default function CitationTreePage() {
                     className="p-2.5 sm:p-3 border rounded-lg transition-all cursor-pointer border-green-200 hover:bg-green-50"
                     onClick={() => {
                       fetchPaperDetails(paper.id)
+                      setIsModalOpen(true)
                     }}
                   >
                     <h4 className="font-medium text-gray-900 text-xs sm:text-sm mb-1 line-clamp-2">{paper.title}</h4>
