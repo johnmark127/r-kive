@@ -29,7 +29,7 @@ export default function CitationTreePage() {
   // Semantic similarity features
   const [semanticSimilarities, setSemanticSimilarities] = useState({})
   const [showSimilarityLines, setShowSimilarityLines] = useState(true)
-  const [similarityThreshold, setSimilarityThreshold] = useState(0.6)
+  const [similarityThreshold, setSimilarityThreshold] = useState(0.3)
   const [relatedPapers, setRelatedPapers] = useState([])
   const [showSemanticFilters, setShowSemanticFilters] = useState(false)
   
@@ -398,15 +398,26 @@ export default function CitationTreePage() {
         setCitationCounts({})
       } else {
         setSearchResults(data)
-        // Fetch citation counts for each paper
+        // Fetch incoming (cited-by) and outgoing (references) counts for each paper
         const counts = {}
         await Promise.all(
           data.map(async (paper) => {
-            const { count, error: countError } = await supabase
+            // incoming: how many times this paper is cited by others
+            const { count: incomingCount, error: incomingError } = await supabase
               .from('citations')
               .select('*', { count: 'exact', head: true })
               .eq('cited_paper_id', paper.id)
-            counts[paper.id] = countError ? 0 : count
+
+            // outgoing: how many references this paper has (how many papers it cites)
+            const { count: outgoingCount, error: outgoingError } = await supabase
+              .from('citations')
+              .select('*', { count: 'exact', head: true })
+              .eq('citing_paper_id', paper.id)
+
+            counts[paper.id] = {
+              incoming: incomingError ? 0 : incomingCount,
+              outgoing: outgoingError ? 0 : outgoingCount,
+            }
           })
         )
         setCitationCounts(counts)
@@ -556,7 +567,15 @@ export default function CitationTreePage() {
           .attr("y2", linkData => nodes.find(n => n.id === linkData.target).y)
       })
       .on("end", function (event, d) {
-        d3.select(this).select("circle").attr("stroke", d.isMain ? "#374151" : "#3b82f6").attr("stroke-width", d.isMain ? 0 : 2)
+        let strokeColor;
+        if (d.isMain) {
+          strokeColor = "#374151";
+        } else if (d.isSemanticRelated) {
+          strokeColor = "#10b981"; // Green for semantic nodes
+        } else {
+          strokeColor = "#3b82f6"; // Blue for citation nodes
+        }
+        d3.select(this).select("circle").attr("stroke", strokeColor).attr("stroke-width", d.isMain ? 0 : 2)
       })
     node.call(drag)
 
@@ -625,7 +644,8 @@ export default function CitationTreePage() {
 
         // Enhanced hover effect for current node
         if (!d.isMain) {
-          d3.select(this).select("circle").transition().duration(200).attr("fill", "#dbeafe").attr("r", 10)
+          const hoverColor = d.isSemanticRelated ? "#bbf7d0" : "#dbeafe" // Light green for semantic, light blue for citation
+          d3.select(this).select("circle").transition().duration(200).attr("fill", hoverColor).attr("r", 10)
         }
 
         // Show tooltip-like effect
@@ -642,7 +662,8 @@ export default function CitationTreePage() {
 
         // Reset current node
         if (!d.isMain) {
-          d3.select(this).select("circle").transition().duration(300).attr("fill", "white").attr("r", 8)
+          const originalColor = d.isSemanticRelated ? "#dcfce7" : "white" // Green for semantic, white for citation
+          d3.select(this).select("circle").transition().duration(300).attr("fill", originalColor).attr("r", 8)
         }
 
         // Reset text
@@ -801,7 +822,9 @@ export default function CitationTreePage() {
                       <div className="flex justify-between items-center">
                         <span className="truncate pr-2">{paper.title}</span>
                         <span className="ml-2 px-2 py-0.5 bg-gray-100 rounded text-gray-600 text-[11px] whitespace-nowrap">
-                          {citationCounts[paper.id] !== undefined ? `${citationCounts[paper.id]} citations` : '...'}
+                          {citationCounts[paper.id] !== undefined ? (
+                            `${(citationCounts[paper.id].incoming || 0).toLocaleString()} cited by • ${(citationCounts[paper.id].outgoing || 0).toLocaleString()} refs`
+                          ) : '...'}
                         </span>
                       </div>
                     </li>
@@ -960,7 +983,10 @@ export default function CitationTreePage() {
                 
                 <div className="flex flex-wrap gap-2">
                   <Badge variant="secondary" className="text-xs">
-                    {(selectedPaper.citations || 0).toLocaleString()} citations
+                    {citationData ? (citationData.citations || 0).toLocaleString() : (selectedPaper.citations || 0).toLocaleString()} cited by
+                  </Badge>
+                  <Badge variant="outline" className="text-xs">
+                    {citationData ? ((citationData.children || []).length).toLocaleString() : '...'} references
                   </Badge>
                   {selectedPaper.similarity && (
                     <Badge variant="outline" className="bg-green-50 text-green-700 text-xs">
@@ -1049,49 +1075,7 @@ export default function CitationTreePage() {
             </div>
           </div>
 
-          <div className="bg-white rounded-lg shadow-sm border p-4 sm:p-6">
-            <h4 className="font-semibold text-gray-900 mb-3 sm:mb-4 text-sm sm:text-base">Direct Citations</h4>
-             <div className="space-y-2 sm:space-y-3">
-              {!selectedPaper ? (
-                <div className="text-center py-6 sm:py-8">
-                  <div className="w-12 h-12 sm:w-16 sm:h-16 mx-auto bg-gray-100 rounded-full flex items-center justify-center mb-3">
-                    <svg className="w-6 h-6 sm:w-8 sm:h-8 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13.828 10.172a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.101m-.758-4.899a4 4 0 005.656 0l4-4a4 4 0 00-5.656-5.656l-1.1 1.1" />
-                    </svg>
-                  </div>
-                  <p className="text-gray-500 text-xs sm:text-sm px-2">
-                    Connected papers will appear here when you select a research paper
-                  </p>
-                </div>
-              ) : citationData && citationData.children && citationData.children.length > 0 ? (
-                citationData.children.slice(0, 5).map((paper, index) => (
-                  <div
-                    key={index}
-                    className={`p-2.5 sm:p-3 border rounded-lg transition-all cursor-pointer ${
-                      hoveredPaper?.id === paper.id ? "border-blue-300 bg-blue-50" : "border-gray-200 hover:bg-gray-50"
-                    }`}
-                    onClick={() => {
-                      fetchPaperDetails(paper.id)
-                    }}
-                    onMouseEnter={() => setHoveredPaper(paper)}
-                    onMouseLeave={() => setHoveredPaper(null)}
-                  >
-                    <h4 className="font-medium text-gray-900 text-xs sm:text-sm mb-1 line-clamp-2">{paper.name}</h4>
-                    <div className="text-xs text-gray-600">{paper.citations} citations</div>
-                  </div>
-                ))
-              ) : (
-                <div className="text-center py-4 sm:py-6">
-                  <div className="w-10 h-10 sm:w-12 sm:h-12 mx-auto bg-gray-100 rounded-full flex items-center justify-center mb-2">
-                    <svg className="w-5 h-5 sm:w-6 sm:h-6 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
-                    </svg>
-                  </div>
-                  <p className="text-gray-500 text-xs sm:text-sm">No citations found for this paper</p>
-                </div>
-              )}
-            </div>
-          </div>
+          
         </div>
       </div>
 
@@ -1111,7 +1095,14 @@ export default function CitationTreePage() {
                   <div className="line-clamp-1">{selectedPaper.authors}</div>
                   <div>{selectedPaper.year_published}</div>
                 </div>
-                <Badge variant="secondary" className="text-xs">{selectedPaper.citations} citations</Badge>
+                <div className="flex flex-wrap gap-2">
+                  <Badge variant="secondary" className="text-xs">
+                    {citationData ? (citationData.citations || 0).toLocaleString() : (selectedPaper.citations || 0).toLocaleString()} cited by
+                  </Badge>
+                  <Badge variant="outline" className="text-xs">
+                    {citationData ? ((citationData.children || []).length).toLocaleString() : '...'} references
+                  </Badge>
+                </div>
               </div>
               <button className="text-gray-400 hover:text-gray-600 p-1 flex-shrink-0" onClick={() => setIsModalOpen(false)}>
                 <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
