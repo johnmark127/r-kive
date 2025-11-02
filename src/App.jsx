@@ -44,6 +44,9 @@ import AdviserReports from "./pages/dashboard/adviser/reports";
 import AdviserSettings from "./pages/dashboard/adviser/settings";
 import AdviserResearchProposals from "./pages/dashboard/adviser/ResearchProposals";
 
+// Shared pages
+import Notifications from "./pages/dashboard/Notifications";
+
 import { BrowserRouter, Routes, Route } from 'react-router-dom'
 import { ThemeProvider } from "./contexts/theme-context"
 import './dashboard.css'
@@ -77,6 +80,7 @@ function App() {
                         <Route path="settings" element={<Settings />} />
                         <Route path="announcements" element={<AnnouncementPage />} />
                         <Route path="access-requests" element={<AccessRequestPage />} />
+                        <Route path="notifications" element={<Notifications />} />
                     </Route>
                     
                     <Route path="/student" element={<DashboardLayout />}>
@@ -87,6 +91,7 @@ function App() {
                         <Route path="guidelines" element={<Guidelines />} />
                         <Route path="messages" element={<StudentMessages />} />
                         <Route path="settings" element={<StudentSettings />} />
+                        <Route path="notifications" element={<Notifications />} />
                         {/* Research Hub - All research functionality in one place */}
                         <Route path="research" element={<ResearchHub />} />
                         <Route path="research/projects" element={<ResearchHub />} />
@@ -102,6 +107,7 @@ function App() {
                         <Route path="groups" element={<SGroup />} />
                         <Route path="repository" element={<Repository />} />
                         <Route path="adviser-monitoring" element={<AdviserMonitoring />} />
+                        <Route path="notifications" element={<Notifications />} />
                     </Route>
                     {/* Adviser Dashboard Routes */}
                     <Route path="/adviser" element={<DashboardLayout />}>
@@ -110,6 +116,7 @@ function App() {
                         <Route path="progress" element={<AdviserProgress />} />
                         <Route path="reports" element={<AdviserReports />} />
                         <Route path="settings" element={<AdviserSettings />} />
+                        <Route path="notifications" element={<Notifications />} />
                     </Route>
                 </Routes>
             </BrowserRouter>
