@@ -12,24 +12,80 @@ import {
   Camera,
   Clock,
   MapPin,
+  Lock,
+  Edit,
+  Save,
+  X,
 } from "lucide-react"
-import { useState } from "react"
+import { useState, useEffect } from "react"
+import { supabase } from "../../../supabase/client"
 
 const StudentSettingsPage = () => {
   const [showPassword, setShowPassword] = useState(false)
   const [activeTab, setActiveTab] = useState("profile")
   const [profilePicture, setProfilePicture] = useState("/placeholder.svg?height=80&width=80")
+  const [currentUser, setCurrentUser] = useState(null)
+  const [isEditingEmail, setIsEditingEmail] = useState(false)
   const [settings, setSettings] = useState({
     // Profile Settings
-    studentName: "John Doe",
-    studentId: "2024-001234",
-    email: "john.doe@student.edu",
-    course: "Computer Science",
-    yearLevel: "4th Year",
+    studentName: "",
+    studentId: null,
+    email: "",
+    course: "Bachelor of Science in Information Technology",
+    yearLevel: "",
     currentPassword: "",
     newPassword: "",
     confirmPassword: "",
   })
+
+  // Get current user data
+  useEffect(() => {
+    const getCurrentUser = async () => {
+      try {
+        const { data: { session }, error } = await supabase.auth.getSession()
+        if (error) {
+          console.error('Error getting session:', error)
+          return
+        }
+        
+        if (session?.user) {
+          const localUser = JSON.parse(localStorage.getItem("user") || "{}")
+          if (localUser.uid) {
+            setCurrentUser(localUser)
+            // Update settings with real user data
+            setSettings(prev => ({
+              ...prev,
+              studentName: localUser.firstName && localUser.lastName 
+                ? `${localUser.firstName} ${localUser.lastName}` 
+                : localUser.name || "",
+              studentId: localUser.studentId || null,
+              email: localUser.email || session.user.email || "",
+              course: localUser.course || "Bachelor of Science in Information Technology",
+              yearLevel: localUser.yearLevel || "",
+            }))
+          } else {
+            // Fallback to session data
+            const userData = {
+              uid: session.user.id,
+              email: session.user.email,
+              role: 'student'
+            }
+            setCurrentUser(userData)
+            setSettings(prev => ({
+              ...prev,
+              email: session.user.email || "",
+              studentId: null,
+              course: "Bachelor of Science in Information Technology",
+            }))
+          }
+        }
+      } catch (error) {
+        console.error('Error fetching user:', error)
+      }
+    }
+
+    getCurrentUser()
+  }, [])
 
   const handleInputChange = (field, value) => {
     setSettings((prev) => ({
@@ -52,6 +108,23 @@ const StudentSettingsPage = () => {
   const handleSave = (section) => {
     console.log(`Saving ${section} settings:`, settings)
     alert(`${section} settings saved successfully!`)
+  }
+
+  const handleEditEmail = () => {
+    setIsEditingEmail(true)
+  }
+
+  const handleSaveEmail = () => {
+    // Here you would typically call an API to update the email
+    console.log('Saving new email:', settings.email)
+    setIsEditingEmail(false)
+    alert('Email updated successfully!')
+  }
+
+  const handleCancelEmailEdit = () => {
+    // Reset email to original value if needed
+    setIsEditingEmail(false)
+    // You might want to restore the original email here
   }
 
   const tabs = [
@@ -222,14 +295,57 @@ const StudentSettingsPage = () => {
                     />
                   </div>
                   <div>
-                    <label className="block text-xs sm:text-sm font-medium text-gray-700 mb-2">Email Address</label>
-                    <Input
-                      type="email"
-                      value={settings.email}
-                      onChange={(e) => handleInputChange("email", e.target.value)}
-                      placeholder="Enter email address"
-                      className="text-sm"
-                    />
+                    <div className="flex items-center justify-between mb-2">
+                      <label className="block text-xs sm:text-sm font-medium text-gray-700">
+                        Email Address
+                        {!isEditingEmail && (
+                          <span className="ml-1 text-xs text-gray-500">(Account Email)</span>
+                        )}
+                      </label>
+                      {!isEditingEmail && (
+                        <button
+                          onClick={handleEditEmail}
+                          className="flex items-center text-xs text-blue-600 hover:text-blue-800 transition-colors"
+                        >
+                          <Edit className="w-3 h-3 mr-1" />
+                          Change Email
+                        </button>
+                      )}
+                    </div>
+                    <div className="relative">
+                      <Input
+                        type="email"
+                        value={settings.email}
+                        onChange={isEditingEmail ? (e) => handleInputChange("email", e.target.value) : undefined}
+                        readOnly={!isEditingEmail}
+                        className={`text-sm ${
+                          isEditingEmail 
+                            ? "border-blue-500 focus:ring-blue-500 pr-20" 
+                            : "bg-gray-50 cursor-not-allowed pr-10"
+                        }`}
+                        tabIndex={isEditingEmail ? 0 : -1}
+                      />
+                      {isEditingEmail ? (
+                        <div className="absolute right-2 top-1/2 transform -translate-y-1/2 flex items-center space-x-1">
+                          <button
+                            onClick={handleSaveEmail}
+                            className="p-1 text-green-600 hover:text-green-800 transition-colors"
+                            title="Save email"
+                          >
+                            <Save className="w-4 h-4" />
+                          </button>
+                          <button
+                            onClick={handleCancelEmailEdit}
+                            className="p-1 text-red-600 hover:text-red-800 transition-colors"
+                            title="Cancel"
+                          >
+                            <X className="w-4 h-4" />
+                          </button>
+                        </div>
+                      ) : (
+                        <Lock className="absolute right-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-gray-400" />
+                      )}
+                    </div>
                   </div>
                   <div>
                     <label className="block text-xs sm:text-sm font-medium text-gray-700 mb-2">Course</label>
