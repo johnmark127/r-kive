@@ -3,7 +3,7 @@
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
-import { Settings, User, Shield, Bell, Database, Save, Eye, EyeOff, Upload, Camera, Clock, MapPin } from "lucide-react"
+import { Settings, User, Shield, Save, Eye, EyeOff, Upload, Camera, Clock, MapPin } from "lucide-react"
 import { useState } from "react"
 
 const SettingsPage = () => {
@@ -17,20 +17,6 @@ const SettingsPage = () => {
     currentPassword: "",
     newPassword: "",
     confirmPassword: "",
-
-    // System Settings
-    siteName: "R-kive Research Repository",
-    maxFileSize: "50",
-    allowedFileTypes: "pdf,doc,docx,txt",
-    autoApproval: false,
-    maintenanceMode: false,
-
-    // Notification Settings
-    emailNotifications: true,
-    newSubmissions: true,
-    userRegistrations: true,
-    systemAlerts: true,
-    weeklyReports: true,
 
     // Security Settings
     sessionTimeout: "30",
@@ -65,8 +51,6 @@ const SettingsPage = () => {
 
   const tabs = [
     { id: "profile", label: "Profile", icon: User },
-    { id: "system", label: "System", icon: Database },
-    { id: "notifications", label: "Notifications", icon: Bell },
     { id: "security", label: "Security", icon: Shield },
     { id: "login-history", label: "Login History", icon: Clock },
   ]
@@ -281,156 +265,9 @@ const SettingsPage = () => {
             </Card>
           )}
 
-          {/* System Settings */}
-          {activeTab === "system" && (
-            <Card>
-              <CardHeader>
-                <CardTitle className="text-lg font-semibold flex items-center">
-                  <Database className="w-5 h-5 mr-2" />
-                  System Settings
-                </CardTitle>
-              </CardHeader>
-              <CardContent className="space-y-6">
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">Site Name</label>
-                    <Input
-                      value={settings.siteName}
-                      onChange={(e) => handleInputChange("siteName", e.target.value)}
-                      placeholder="Enter site name"
-                    />
-                  </div>
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">Max File Size (MB)</label>
-                    <Input
-                      type="number"
-                      value={settings.maxFileSize}
-                      onChange={(e) => handleInputChange("maxFileSize", e.target.value)}
-                      placeholder="Enter max file size"
-                    />
-                  </div>
-                </div>
 
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">Allowed File Types</label>
-                  <Input
-                    value={settings.allowedFileTypes}
-                    onChange={(e) => handleInputChange("allowedFileTypes", e.target.value)}
-                    placeholder="e.g., pdf,doc,docx,txt"
-                  />
-                  <p className="text-sm text-gray-500 mt-1">Separate file types with commas</p>
-                </div>
 
-                <div className="space-y-4">
-                  <div className="flex items-center justify-between p-4 bg-gray-50 rounded-lg">
-                    <div>
-                      <h4 className="font-medium text-gray-900">Auto-approve submissions</h4>
-                      <p className="text-sm text-gray-600">Automatically approve new paper submissions</p>
-                    </div>
-                    <button
-                      onClick={() => handleInputChange("autoApproval", !settings.autoApproval)}
-                      className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${
-                        settings.autoApproval ? "bg-blue-600" : "bg-gray-200"
-                      }`}
-                    >
-                      <span
-                        className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${
-                          settings.autoApproval ? "translate-x-6" : "translate-x-1"
-                        }`}
-                      />
-                    </button>
-                  </div>
 
-                  <div className="flex items-center justify-between p-4 bg-gray-50 rounded-lg">
-                    <div>
-                      <h4 className="font-medium text-gray-900">Maintenance Mode</h4>
-                      <p className="text-sm text-gray-600">Temporarily disable public access to the site</p>
-                    </div>
-                    <button
-                      onClick={() => handleInputChange("maintenanceMode", !settings.maintenanceMode)}
-                      className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${
-                        settings.maintenanceMode ? "bg-red-600" : "bg-gray-200"
-                      }`}
-                    >
-                      <span
-                        className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${
-                          settings.maintenanceMode ? "translate-x-6" : "translate-x-1"
-                        }`}
-                      />
-                    </button>
-                  </div>
-                </div>
-
-                <div className="flex justify-end">
-                  <Button onClick={() => handleSave("System")} className="bg-blue-600 hover:bg-blue-700">
-                    <Save className="w-4 h-4 mr-2" />
-                    Save System Settings
-                  </Button>
-                </div>
-              </CardContent>
-            </Card>
-          )}
-
-          {/* Notification Settings */}
-          {activeTab === "notifications" && (
-            <Card>
-              <CardHeader>
-                <CardTitle className="text-lg font-semibold flex items-center">
-                  <Bell className="w-5 h-5 mr-2" />
-                  Notification Settings
-                </CardTitle>
-              </CardHeader>
-              <CardContent className="space-y-6">
-                <div className="space-y-4">
-                  {[
-                    {
-                      key: "emailNotifications",
-                      label: "Email Notifications",
-                      desc: "Receive notifications via email",
-                    },
-                    {
-                      key: "newSubmissions",
-                      label: "New Submissions",
-                      desc: "Get notified when new papers are submitted",
-                    },
-                    {
-                      key: "userRegistrations",
-                      label: "User Registrations",
-                      desc: "Get notified when new users register",
-                    },
-                    { key: "systemAlerts", label: "System Alerts", desc: "Receive important system notifications" },
-                    { key: "weeklyReports", label: "Weekly Reports", desc: "Receive weekly activity summaries" },
-                  ].map((item) => (
-                    <div key={item.key} className="flex items-center justify-between p-4 bg-gray-50 rounded-lg">
-                      <div>
-                        <h4 className="font-medium text-gray-900">{item.label}</h4>
-                        <p className="text-sm text-gray-600">{item.desc}</p>
-                      </div>
-                      <button
-                        onClick={() => handleInputChange(item.key, !settings[item.key])}
-                        className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${
-                          settings[item.key] ? "bg-blue-600" : "bg-gray-200"
-                        }`}
-                      >
-                        <span
-                          className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${
-                            settings[item.key] ? "translate-x-6" : "translate-x-1"
-                          }`}
-                        />
-                      </button>
-                    </div>
-                  ))}
-                </div>
-
-                <div className="flex justify-end">
-                  <Button onClick={() => handleSave("Notifications")} className="bg-blue-600 hover:bg-blue-700">
-                    <Save className="w-4 h-4 mr-2" />
-                    Save Notification Settings
-                  </Button>
-                </div>
-              </CardContent>
-            </Card>
-          )}
 
           {/* Security Settings */}
           {activeTab === "security" && (

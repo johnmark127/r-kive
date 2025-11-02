@@ -8,7 +8,6 @@ import { Avatar, AvatarFallback } from "@/components/ui/avatar"
 import { 
   User, 
   Shield, 
-  Bell, 
   Eye, 
   Lock, 
   Save, 
@@ -16,7 +15,6 @@ import {
   Loader2,
   Check,
   AlertCircle,
-  Settings as SettingsIcon,
   FileText,
   Download,
   Trash2,
@@ -36,28 +34,6 @@ const AdviserSettings = () => {
     lastName: '',
     email: '',
     bio: ''
-  })
-  const [notificationSettings, setNotificationSettings] = useState({
-    emailNotifications: true,
-    pushNotifications: true,
-    groupUpdates: true,
-    proposalSubmissions: true,
-    systemAnnouncements: true,
-    weeklyReports: false,
-    studentMessages: true,
-    deadlineReminders: true
-  })
-  const [privacySettings, setPrivacySettings] = useState({
-    profileVisibility: 'department',
-    showEmail: false,
-    allowStudentContact: true
-  })
-  const [preferences, setPreferences] = useState({
-    theme: 'system',
-    language: 'en',
-    timezone: 'Asia/Manila',
-    dateFormat: 'MM/DD/YYYY',
-    defaultView: 'dashboard'
   })
 
   useEffect(() => {
@@ -112,53 +88,10 @@ const AdviserSettings = () => {
     }
   }
 
-  const handleSaveNotifications = async () => {
-    setSaving(true)
-    try {
-      // In a real implementation, save notification preferences to database
-      await new Promise(resolve => setTimeout(resolve, 1000))
-      alert('Notification settings saved!')
-    } catch (error) {
-      console.error('Error saving notifications:', error)
-      alert('Failed to save notification settings.')
-    } finally {
-      setSaving(false)
-    }
-  }
 
-  const handleSavePrivacy = async () => {
-    setSaving(true)
-    try {
-      // In a real implementation, save privacy settings to database
-      await new Promise(resolve => setTimeout(resolve, 1000))
-      alert('Privacy settings saved!')
-    } catch (error) {
-      console.error('Error saving privacy settings:', error)
-      alert('Failed to save privacy settings.')
-    } finally {
-      setSaving(false)
-    }
-  }
-
-  const handleSavePreferences = async () => {
-    setSaving(true)
-    try {
-      // In a real implementation, save preferences to database
-      await new Promise(resolve => setTimeout(resolve, 1000))
-      alert('Preferences saved!')
-    } catch (error) {
-      console.error('Error saving preferences:', error)
-      alert('Failed to save preferences.')
-    } finally {
-      setSaving(false)
-    }
-  }
 
   const tabs = [
     { id: 'profile', label: 'Profile', icon: User },
-    { id: 'notifications', label: 'Notifications', icon: Bell },
-    { id: 'privacy', label: 'Privacy', icon: Shield },
-    { id: 'preferences', label: 'Preferences', icon: SettingsIcon },
     { id: 'security', label: 'Security', icon: Lock },
     { id: 'data', label: 'Data & Export', icon: Database }
   ]
@@ -330,248 +263,11 @@ const AdviserSettings = () => {
             </Card>
           )}
 
-          {/* Notifications Tab */}
-          {activeTab === 'notifications' && (
-            <Card>
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2">
-                  <Bell className="h-5 w-5" />
-                  Notification Preferences
-                </CardTitle>
-              </CardHeader>
-              <CardContent className="space-y-6">
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                  {Object.entries({
-                    emailNotifications: "Email Notifications",
-                    pushNotifications: "Push Notifications",
-                    groupUpdates: "Group Updates",
-                    proposalSubmissions: "Proposal Submissions",
-                    systemAnnouncements: "System Announcements",
-                    weeklyReports: "Weekly Reports",
-                    studentMessages: "Student Messages",
-                    deadlineReminders: "Deadline Reminders"
-                  }).map(([key, label]) => (
-                    <div key={key} className="flex items-center justify-between p-4 bg-gray-50 rounded-lg">
-                      <div>
-                        <h4 className="text-sm font-medium text-gray-900">{label}</h4>
-                        <p className="text-xs text-gray-600">
-                          {key === 'emailNotifications' && "Receive notifications via email"}
-                          {key === 'pushNotifications' && "Browser and mobile push notifications"}
-                          {key === 'groupUpdates' && "Updates from assigned student groups"}
-                          {key === 'proposalSubmissions' && "New research proposal submissions"}
-                          {key === 'systemAnnouncements' && "Important system updates"}
-                          {key === 'weeklyReports' && "Weekly summary reports"}
-                          {key === 'studentMessages' && "Direct messages from students"}
-                          {key === 'deadlineReminders' && "Reminders for important deadlines"}
-                        </p>
-                      </div>
-                      <label className="relative inline-flex items-center cursor-pointer">
-                        <input
-                          type="checkbox"
-                          className="sr-only peer"
-                          checked={notificationSettings[key]}
-                          onChange={(e) => setNotificationSettings({
-                            ...notificationSettings,
-                            [key]: e.target.checked
-                          })}
-                        />
-                        <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-blue-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-blue-600"></div>
-                      </label>
-                    </div>
-                  ))}
-                </div>
 
-                <Button 
-                  onClick={handleSaveNotifications} 
-                  disabled={saving}
-                  className="w-full md:w-auto"
-                >
-                  {saving ? (
-                    <>
-                      <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                      Saving...
-                    </>
-                  ) : (
-                    <>
-                      <Save className="h-4 w-4 mr-2" />
-                      Save Notifications
-                    </>
-                  )}
-                </Button>
-              </CardContent>
-            </Card>
-          )}
 
-          {/* Privacy Tab */}
-          {activeTab === 'privacy' && (
-            <Card>
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2">
-                  <Shield className="h-5 w-5" />
-                  Privacy Settings
-                </CardTitle>
-              </CardHeader>
-              <CardContent className="space-y-6">
-                <div className="space-y-4">
-                  <div className="p-4 bg-gray-50 rounded-lg">
-                    <h4 className="text-sm font-medium text-gray-900 mb-2">Profile Visibility</h4>
-                    <p className="text-xs text-gray-600 mb-3">Choose who can see your profile information</p>
-                    <select 
-                      className="w-full p-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-                      value={privacySettings.profileVisibility}
-                      onChange={(e) => setPrivacySettings({
-                        ...privacySettings,
-                        profileVisibility: e.target.value
-                      })}
-                    >
-                      <option value="public">Public (Everyone)</option>
-                      <option value="department">Department Only</option>
-                      <option value="students">Students Only</option>
-                      <option value="private">Private</option>
-                    </select>
-                  </div>
 
-                  {Object.entries({
-                    showEmail: "Show Email Address",
-                    allowStudentContact: "Allow Student Contact"
-                  }).map(([key, label]) => (
-                    <div key={key} className="flex items-center justify-between p-4 bg-gray-50 rounded-lg">
-                      <div>
-                        <h4 className="text-sm font-medium text-gray-900">{label}</h4>
-                        <p className="text-xs text-gray-600">
-                          {key === 'showEmail' && "Display your email on your public profile"}
-                          {key === 'allowStudentContact' && "Allow students to send you direct messages"}
-                        </p>
-                      </div>
-                      <label className="relative inline-flex items-center cursor-pointer">
-                        <input
-                          type="checkbox"
-                          className="sr-only peer"
-                          checked={privacySettings[key]}
-                          onChange={(e) => setPrivacySettings({
-                            ...privacySettings,
-                            [key]: e.target.checked
-                          })}
-                        />
-                        <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-blue-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-blue-600"></div>
-                      </label>
-                    </div>
-                  ))}
-                </div>
 
-                <Button 
-                  onClick={handleSavePrivacy} 
-                  disabled={saving}
-                  className="w-full md:w-auto"
-                >
-                  {saving ? (
-                    <>
-                      <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                      Saving...
-                    </>
-                  ) : (
-                    <>
-                      <Save className="h-4 w-4 mr-2" />
-                      Save Privacy Settings
-                    </>
-                  )}
-                </Button>
-              </CardContent>
-            </Card>
-          )}
 
-          {/* Preferences Tab */}
-          {activeTab === 'preferences' && (
-            <Card>
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2">
-                  <SettingsIcon className="h-5 w-5" />
-                  Application Preferences
-                </CardTitle>
-              </CardHeader>
-              <CardContent className="space-y-6">
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                  <div>
-                    <label className="text-sm font-medium text-gray-700 mb-2 block">Theme</label>
-                    <select 
-                      className="w-full p-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-                      value={preferences.theme}
-                      onChange={(e) => setPreferences({...preferences, theme: e.target.value})}
-                    >
-                      <option value="light">Light</option>
-                      <option value="dark">Dark</option>
-                      <option value="system">System</option>
-                    </select>
-                  </div>
-                  <div>
-                    <label className="text-sm font-medium text-gray-700 mb-2 block">Language</label>
-                    <select 
-                      className="w-full p-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-                      value={preferences.language}
-                      onChange={(e) => setPreferences({...preferences, language: e.target.value})}
-                    >
-                      <option value="en">English</option>
-                      <option value="fil">Filipino</option>
-                    </select>
-                  </div>
-                  <div>
-                    <label className="text-sm font-medium text-gray-700 mb-2 block">Timezone</label>
-                    <select 
-                      className="w-full p-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-                      value={preferences.timezone}
-                      onChange={(e) => setPreferences({...preferences, timezone: e.target.value})}
-                    >
-                      <option value="Asia/Manila">Asia/Manila (GMT+8)</option>
-                      <option value="UTC">UTC (GMT+0)</option>
-                    </select>
-                  </div>
-                  <div>
-                    <label className="text-sm font-medium text-gray-700 mb-2 block">Date Format</label>
-                    <select 
-                      className="w-full p-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-                      value={preferences.dateFormat}
-                      onChange={(e) => setPreferences({...preferences, dateFormat: e.target.value})}
-                    >
-                      <option value="MM/DD/YYYY">MM/DD/YYYY</option>
-                      <option value="DD/MM/YYYY">DD/MM/YYYY</option>
-                      <option value="YYYY-MM-DD">YYYY-MM-DD</option>
-                    </select>
-                  </div>
-                  <div className="md:col-span-2">
-                    <label className="text-sm font-medium text-gray-700 mb-2 block">Default Landing Page</label>
-                    <select 
-                      className="w-full p-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-                      value={preferences.defaultView}
-                      onChange={(e) => setPreferences({...preferences, defaultView: e.target.value})}
-                    >
-                      <option value="dashboard">Dashboard</option>
-                      <option value="progress">Progress Overview</option>
-                      <option value="proposals">Proposals</option>
-                      <option value="reports">Reports</option>
-                    </select>
-                  </div>
-                </div>
-
-                <Button 
-                  onClick={handleSavePreferences} 
-                  disabled={saving}
-                  className="w-full md:w-auto"
-                >
-                  {saving ? (
-                    <>
-                      <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                      Saving...
-                    </>
-                  ) : (
-                    <>
-                      <Save className="h-4 w-4 mr-2" />
-                      Save Preferences
-                    </>
-                  )}
-                </Button>
-              </CardContent>
-            </Card>
-          )}
 
           {/* Security Tab */}
           {activeTab === 'security' && (
