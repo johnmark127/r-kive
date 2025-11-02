@@ -2,12 +2,16 @@ import React, { useState, useEffect } from 'react';
 import { loginUser, registerUser, resetPassword } from '../supabase/auth';
 import Loading from './Loading';
 import { useToast } from './ToastManager';
+import TermsOfUseModal from './TermsOfUseModal';
+import PrivacyPolicyModal from './PrivacyPolicyModal';
 
 const AuthModal = ({ isOpen, onClose }) => {
     const [isRegisterMode, setIsRegisterMode] = useState(false);
     const [isForgotPasswordMode, setIsForgotPasswordMode] = useState(false);
     const [showPassword, setShowPassword] = useState({});
     const [loading, setLoading] = useState(false);
+    const [showTermsModal, setShowTermsModal] = useState(false);
+    const [showPrivacyModal, setShowPrivacyModal] = useState(false);
     const { showToast } = useToast();
     const [loginData, setLoginData] = useState({
         email: '',
@@ -256,8 +260,8 @@ const AuthModal = ({ isOpen, onClose }) => {
                             </button>
                             
                             <div style={{ textAlign: 'center', marginTop: '12px', fontSize: '15px' }}>
-                                <a href="#" style={{ color: '#245884', textDecoration: 'underline', fontWeight: '500' }} onClick={(e) => e.preventDefault()}>Terms of Use</a> and {' '}
-                                <a href="#" style={{ color: '#245884', textDecoration: 'underline', fontWeight: '500' }} onClick={(e) => e.preventDefault()}>Privacy Policy</a>.
+                                <a href="#" onClick={(e) => { e.preventDefault(); setShowTermsModal(true); }} style={{ color: '#245884', textDecoration: 'underline', fontWeight: '500', cursor: 'pointer' }}>Terms of Use</a> and {' '}
+                                <a href="#" onClick={(e) => { e.preventDefault(); setShowPrivacyModal(true); }} style={{ color: '#245884', textDecoration: 'underline', fontWeight: '500', cursor: 'pointer' }}>Privacy Policy</a>.
                             </div>
 
                             {/* Mobile Signup Prompt */}
@@ -373,8 +377,8 @@ const AuthModal = ({ isOpen, onClose }) => {
                             </button>
                             
                             <div style={{ textAlign: 'center', marginTop: '12px', fontSize: '15px' }}>
-                                <a href="#" style={{ color: '#245884', textDecoration: 'underline', fontWeight: '500' }} onClick={(e) => e.preventDefault()}>Terms of Use</a> and {' '}
-                                <a href="#" style={{ color: '#245884', textDecoration: 'underline', fontWeight: '500' }} onClick={(e) => e.preventDefault()}>Privacy Policy</a>.
+                                <a href="#" onClick={(e) => { e.preventDefault(); setShowTermsModal(true); }} style={{ color: '#245884', textDecoration: 'underline', fontWeight: '500', cursor: 'pointer' }}>Terms of Use</a> and {' '}
+                                <a href="#" onClick={(e) => { e.preventDefault(); setShowPrivacyModal(true); }} style={{ color: '#245884', textDecoration: 'underline', fontWeight: '500', cursor: 'pointer' }}>Privacy Policy</a>.
                             </div>
 
                             {/* Mobile Login Prompt */}
@@ -444,8 +448,8 @@ const AuthModal = ({ isOpen, onClose }) => {
                                 }}>Back to Login</a>
                             </div>
                             <div style={{ textAlign: 'center', marginTop: '12px', fontSize: '15px' }}>
-                                <a href="#" style={{ color: '#245884', textDecoration: 'underline', fontWeight: '500' }} onClick={(e) => e.preventDefault()}>Terms of Use</a> and {' '}
-                                <a href="#" style={{ color: '#245884', textDecoration: 'underline', fontWeight: '500' }} onClick={(e) => e.preventDefault()}>Privacy Policy</a>.
+                                <a href="#" onClick={(e) => { e.preventDefault(); setShowTermsModal(true); }} style={{ color: '#245884', textDecoration: 'underline', fontWeight: '500', cursor: 'pointer' }}>Terms of Use</a> and {' '}
+                                <a href="#" onClick={(e) => { e.preventDefault(); setShowPrivacyModal(true); }} style={{ color: '#245884', textDecoration: 'underline', fontWeight: '500', cursor: 'pointer' }}>Privacy Policy</a>.
                             </div>
                         </form>
                     </div>
@@ -478,6 +482,10 @@ const AuthModal = ({ isOpen, onClose }) => {
 
                 </div>
             </div>
+            
+            {/* Legal Modals */}
+            <TermsOfUseModal isOpen={showTermsModal} onClose={() => setShowTermsModal(false)} />
+            <PrivacyPolicyModal isOpen={showPrivacyModal} onClose={() => setShowPrivacyModal(false)} />
         </div>
     );
 };
