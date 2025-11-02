@@ -2,6 +2,7 @@ import React from "react"
 import Index from "./pages/index"
 import About from "./pages/about"
 import SearchResults from "./pages/SearchResults"
+import ResetPassword from "./pages/auth/ResetPassword"
 import DashboardLayout from "./layouts/DashboardLayout"
 import AdminDashboard from "./pages/dashboard/admin/AdminDashboard"
 // import Analytics from "./pages/dashboard/admin/Analytics"
@@ -56,6 +57,7 @@ function App() {
                     <Route path='/' element={<Index/>}/>
                     <Route path='/about' element={<About/>}/>
                     <Route path='/search' element={<SearchResults />} />
+                    <Route path='/reset-password' element={<ResetPassword />} />
                     
                     {/* Dashboard Routes */}
                     <Route path="/admin" element={<DashboardLayout />}>
