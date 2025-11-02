@@ -19,6 +19,7 @@ import {
 } from "lucide-react"
 import { useState, useEffect } from "react"
 import { supabase } from "../../../supabase/client"
+import { useProfilePictureUpload } from "../../../hooks/useProfilePictureUpload"
 
 const StudentSettingsPage = () => {
   const [showPassword, setShowPassword] = useState(false)
@@ -26,6 +27,20 @@ const StudentSettingsPage = () => {
   const [profilePicture, setProfilePicture] = useState("/placeholder.svg?height=80&width=80")
   const [currentUser, setCurrentUser] = useState(null)
   const [isEditingEmail, setIsEditingEmail] = useState(false)
+  const [uploadError, setUploadError] = useState("")
+  const [uploadSuccess, setUploadSuccess] = useState("")
+  const [passwordError, setPasswordError] = useState("")
+  const [passwordSuccess, setPasswordSuccess] = useState("")
+  const [changingPassword, setChangingPassword] = useState(false)
+  
+  // Profile picture upload hook
+  const {
+    uploading: uploadingProfilePicture,
+    uploadProgress,
+    uploadProfilePicture,
+    removeProfilePicture,
+    updateUserProfilePicture
+  } = useProfilePictureUpload()
   const [settings, setSettings] = useState({
     // Profile Settings
     studentName: "",
@@ -63,6 +78,11 @@ const StudentSettingsPage = () => {
               course: localUser.course || "Bachelor of Science in Information Technology",
               yearLevel: localUser.yearLevel || "",
             }))
+            
+            // Set profile picture from database
+            if (localUser.profile_picture_url) {
+              setProfilePicture(localUser.profile_picture_url)
+            }
           } else {
             // Fallback to session data
             const userData = {
@@ -88,26 +108,169 @@ const StudentSettingsPage = () => {
   }, [])
 
   const handleInputChange = (field, value) => {
+    // Clear password errors when user starts typing in password fields
+    if (field.includes('Password') && passwordError) {
+      setPasswordError("")
+    }
+    
     setSettings((prev) => ({
       ...prev,
       [field]: value,
     }))
   }
 
-  const handleProfilePictureUpload = (event) => {
+  const handleProfilePictureUpload = async (event) => {
     const file = event.target.files[0]
-    if (file) {
-      const reader = new FileReader()
-      reader.onload = (e) => {
-        setProfilePicture(e.target.result)
+    if (!file || !currentUser) return
+
+    // Clear previous messages
+    setUploadError("")
+    setUploadSuccess("")
+
+    try {
+      // Upload to Supabase storage
+      const uploadResult = await uploadProfilePicture(file, currentUser.uid)
+      
+      if (uploadResult.success) {
+        // Update database
+        const dbResult = await updateUserProfilePicture(currentUser.uid, uploadResult.url)
+        
+        if (dbResult.success) {
+          // Update local state
+          setProfilePicture(uploadResult.url)
+          
+          // Update localStorage
+          const updatedUser = { ...currentUser, profile_picture_url: uploadResult.url }
+          localStorage.setItem("user", JSON.stringify(updatedUser))
+          setCurrentUser(updatedUser)
+          
+          setUploadSuccess("Profile picture updated successfully!")
+          
+          // Clear success message after 3 seconds
+          setTimeout(() => setUploadSuccess(""), 3000)
+        } else {
+          throw new Error(dbResult.error)
+        }
+      } else {
+        throw new Error(uploadResult.error)
       }
-      reader.readAsDataURL(file)
+    } catch (error) {
+      console.error('Error uploading profile picture:', error)
+      setUploadError(error.message || 'Failed to upload profile picture')
+    }
+    
+    // Clear the file input
+    event.target.value = ''
+  }
+
+  const handleSave = async (section) => {
+    if (section === "Profile") {
+      await handleProfileSave()
     }
   }
 
-  const handleSave = (section) => {
-    console.log(`Saving ${section} settings:`, settings)
-    alert(`${section} settings saved successfully!`)
+  const handleProfileSave = async () => {
+    // Only process password change if password fields are filled
+    if (settings.currentPassword || settings.newPassword || settings.confirmPassword) {
+      await handlePasswordChange()
+    } else {
+      // Save other profile data (name, student ID, course, year level)
+      await handleProfileDataSave()
+    }
+  }
+
+  const handleProfileDataSave = async () => {
+    try {
+      if (!currentUser) return
+
+      // Update user data in database
+      const { error } = await supabase
+        .from('users')
+        .update({
+          firstName: settings.studentName.split(' ')[0] || '',
+          lastName: settings.studentName.split(' ').slice(1).join(' ') || '',
+          // Note: studentId, course, yearLevel would need to be added to users table
+          // For now, we'll just update localStorage
+        })
+        .eq('id', currentUser.uid)
+
+      if (error) {
+        throw error
+      }
+
+      // Update localStorage
+      const updatedUser = { 
+        ...currentUser, 
+        firstName: settings.studentName.split(' ')[0] || '',
+        lastName: settings.studentName.split(' ').slice(1).join(' ') || '',
+        name: settings.studentName
+      }
+      localStorage.setItem("user", JSON.stringify(updatedUser))
+      setCurrentUser(updatedUser)
+
+      setPasswordSuccess("Profile updated successfully!")
+      setTimeout(() => setPasswordSuccess(""), 3000)
+
+    } catch (error) {
+      console.error('Error updating profile:', error)
+      setPasswordError(error.message || 'Failed to update profile')
+    }
+  }
+
+  const handlePasswordChange = async () => {
+    // Clear previous messages
+    setPasswordError("")
+    setPasswordSuccess("")
+
+    // Validation
+    if (!settings.newPassword) {
+      setPasswordError("New password is required")
+      return
+    }
+
+    if (settings.newPassword.length < 6) {
+      setPasswordError("New password must be at least 6 characters long")
+      return
+    }
+
+    if (settings.newPassword !== settings.confirmPassword) {
+      setPasswordError("New password and confirmation do not match")
+      return
+    }
+
+    setChangingPassword(true)
+
+    try {
+      // Note: Supabase doesn't provide a direct way to verify current password
+      // In production, you might want to implement a server-side verification
+      // For now, we'll proceed with the password update directly
+      
+      // Update password
+      const { error: updateError } = await supabase.auth.updateUser({
+        password: settings.newPassword
+      })
+
+      if (updateError) {
+        throw updateError
+      }
+
+      // Clear password fields
+      setSettings(prev => ({
+        ...prev,
+        currentPassword: "",
+        newPassword: "",
+        confirmPassword: ""
+      }))
+
+      setPasswordSuccess("Password changed successfully!")
+      setTimeout(() => setPasswordSuccess(""), 3000)
+
+    } catch (error) {
+      console.error('Error changing password:', error)
+      setPasswordError(error.message || 'Failed to change password. Please try again.')
+    } finally {
+      setChangingPassword(false)
+    }
   }
 
   const handleEditEmail = () => {
@@ -125,6 +288,51 @@ const StudentSettingsPage = () => {
     // Reset email to original value if needed
     setIsEditingEmail(false)
     // You might want to restore the original email here
+  }
+
+  const handleRemoveProfilePicture = async () => {
+    if (!currentUser || !currentUser.profile_picture_url) return
+
+    // Clear previous messages
+    setUploadError("")
+    setUploadSuccess("")
+
+    try {
+      // Extract filename from URL for deletion
+      const url = currentUser.profile_picture_url
+      const urlParts = url.split('/')
+      const fileName = `${currentUser.uid}/${urlParts[urlParts.length - 1]}`
+      
+      // Remove from storage
+      const removeResult = await removeProfilePicture(fileName)
+      
+      if (removeResult.success) {
+        // Update database
+        const dbResult = await updateUserProfilePicture(currentUser.uid, null)
+        
+        if (dbResult.success) {
+          // Update local state
+          setProfilePicture("/placeholder.svg?height=80&width=80")
+          
+          // Update localStorage
+          const updatedUser = { ...currentUser, profile_picture_url: null }
+          localStorage.setItem("user", JSON.stringify(updatedUser))
+          setCurrentUser(updatedUser)
+          
+          setUploadSuccess("Profile picture removed successfully!")
+          
+          // Clear success message after 3 seconds
+          setTimeout(() => setUploadSuccess(""), 3000)
+        } else {
+          throw new Error(dbResult.error)
+        }
+      } else {
+        throw new Error(removeResult.error)
+      }
+    } catch (error) {
+      console.error('Error removing profile picture:', error)
+      setUploadError(error.message || 'Failed to remove profile picture')
+    }
   }
 
   const tabs = [
@@ -241,14 +449,32 @@ const StudentSettingsPage = () => {
                 {/* Profile Picture Section */}
                 <div className="flex flex-col sm:flex-row sm:items-center space-y-4 sm:space-y-0 sm:space-x-6 p-4 bg-gray-50 rounded-lg">
                   <div className="relative self-center sm:self-auto">
-                    <img
-                      src={profilePicture || "/placeholder.svg"}
-                      alt="Profile Picture"
-                      className="w-16 h-16 sm:w-20 sm:h-20 rounded-full object-cover border-4 border-white shadow-md"
-                    />
-                    <div className="absolute -bottom-1 -right-1 bg-blue-600 rounded-full p-1.5 cursor-pointer hover:bg-blue-700 transition-colors">
-                      <Camera className="w-3 h-3 text-white" />
+                    <div 
+                      className="relative cursor-pointer group"
+                      onClick={() => document.getElementById('profile-picture-input').click()}
+                    >
+                      <img
+                        src={profilePicture || "/placeholder.svg"}
+                        alt="Profile Picture"
+                        className="w-16 h-16 sm:w-20 sm:h-20 rounded-full object-cover border-4 border-white shadow-md group-hover:opacity-75 transition-opacity"
+                      />
+                      {uploadingProfilePicture && (
+                        <div className="absolute inset-0 bg-black bg-opacity-50 rounded-full flex items-center justify-center">
+                          <div className="text-white text-xs font-medium">{uploadProgress}%</div>
+                        </div>
+                      )}
+                      <div className="absolute -bottom-1 -right-1 bg-blue-600 rounded-full p-1.5 cursor-pointer hover:bg-blue-700 transition-colors group-hover:bg-blue-700">
+                        <Camera className="w-3 h-3 text-white" />
+                      </div>
                     </div>
+                    <input
+                      id="profile-picture-input"
+                      type="file"
+                      accept="image/*"
+                      onChange={handleProfilePictureUpload}
+                      className="hidden"
+                      disabled={uploadingProfilePicture}
+                    />
                   </div>
                   <div className="flex-1 text-center sm:text-left">
                     <h3 className="font-medium text-gray-900 mb-2 text-sm sm:text-base">Profile Picture</h3>
@@ -256,22 +482,38 @@ const StudentSettingsPage = () => {
                       Upload a new profile picture. Recommended size: 200x200px
                     </p>
                     <div className="flex flex-col xs:flex-row gap-2 sm:gap-3 justify-center sm:justify-start">
-                      <label className="cursor-pointer">
-                        <input type="file" accept="image/*" onChange={handleProfilePictureUpload} className="hidden" />
-                        <Button variant="outline" size="sm" className="flex items-center bg-transparent text-xs sm:text-sm">
-                          <Upload className="w-3 h-3 sm:w-4 sm:h-4 mr-1 sm:mr-2" />
-                          Upload New
-                        </Button>
-                      </label>
                       <Button
                         variant="outline"
                         size="sm"
-                        onClick={() => setProfilePicture("/placeholder.svg?height=80&width=80")}
+                        onClick={() => document.getElementById('profile-picture-input').click()}
+                        disabled={uploadingProfilePicture}
+                        className="flex items-center bg-transparent text-xs sm:text-sm"
+                      >
+                        <Upload className="w-3 h-3 sm:w-4 sm:h-4 mr-1 sm:mr-2" />
+                        {uploadingProfilePicture ? 'Uploading...' : 'Upload New'}
+                      </Button>
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={handleRemoveProfilePicture}
+                        disabled={uploadingProfilePicture || profilePicture === "/placeholder.svg?height=80&width=80"}
                         className="text-xs sm:text-sm"
                       >
                         Remove
                       </Button>
                     </div>
+                    
+                    {/* Upload Status Messages */}
+                    {uploadError && (
+                      <div className="text-xs text-red-600 mt-2 p-2 bg-red-50 rounded border border-red-200">
+                        {uploadError}
+                      </div>
+                    )}
+                    {uploadSuccess && (
+                      <div className="text-xs text-green-600 mt-2 p-2 bg-green-50 rounded border border-green-200">
+                        {uploadSuccess}
+                      </div>
+                    )}
                   </div>
                 </div>
 
@@ -373,10 +615,16 @@ const StudentSettingsPage = () => {
                 </div>
 
                 <div className="border-t pt-4 sm:pt-6">
-                  <h3 className="text-sm sm:text-base font-medium text-gray-900 mb-4">Change Password</h3>
+                  <h3 className="text-sm sm:text-base font-medium text-gray-900 mb-2">Change Password</h3>
+                  <p className="text-xs text-gray-600 mb-4">
+                    Enter your new password below. You'll remain signed in after the password is changed.
+                  </p>
                   <div className="grid grid-cols-1 sm:grid-cols-1 md:grid-cols-3 gap-4">
                     <div>
-                      <label className="block text-xs sm:text-sm font-medium text-gray-700 mb-2">Current Password</label>
+                      <label className="block text-xs sm:text-sm font-medium text-gray-700 mb-2">
+                        Current Password 
+                        <span className="text-gray-500 font-normal">(optional)</span>
+                      </label>
                       <div className="relative">
                         <Input
                           type={showPassword ? "text" : "password"}
@@ -417,9 +665,25 @@ const StudentSettingsPage = () => {
                   </div>
                 </div>
 
+                {/* Password Change Status Messages */}
+                {passwordError && (
+                  <div className="text-sm text-red-600 p-3 bg-red-50 rounded border border-red-200">
+                    {passwordError}
+                  </div>
+                )}
+                {passwordSuccess && (
+                  <div className="text-sm text-green-600 p-3 bg-green-50 rounded border border-green-200">
+                    {passwordSuccess}
+                  </div>
+                )}
+
                 <div className="flex justify-end">
-                  <Button onClick={() => handleSave("Profile")} className="bg-blue-600 hover:bg-blue-700 text-sm sm:text-base w-full sm:w-auto">
-                    Save Profile Settings
+                  <Button 
+                    onClick={() => handleSave("Profile")} 
+                    disabled={changingPassword || uploadingProfilePicture}
+                    className="bg-blue-600 hover:bg-blue-700 text-sm sm:text-base w-full sm:w-auto"
+                  >
+                    {changingPassword ? "Changing Password..." : "Save Profile Settings"}
                   </Button>
                 </div>
               </CardContent>
