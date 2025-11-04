@@ -15,7 +15,7 @@ const BrowseProjectsPage = () => {
   const [searchQuery, setSearchQuery] = useState("")
   const [categoryFilter, setCategoryFilter] = useState("")
   const [yearFilter, setYearFilter] = useState("")
-  const [sortFilter, setSortFilter] = useState("relevance")
+  const [accessFilter, setAccessFilter] = useState("all") // "all", "approved", "pending", "expiring"
   const [bookmarkedPapers, setBookmarkedPapers] = useState(new Set())
   const [selectedPaper, setSelectedPaper] = useState(null)
   const [showModal, setShowModal] = useState(false)
@@ -70,9 +70,23 @@ const BrowseProjectsPage = () => {
     const fetchRequests = async () => {
       const { data, error } = await supabase
         .from("research_paper_access_requests")
-        .select("id, paper_id, status")
+        .select("id, paper_id, status, expires_at")
         .eq("student_id", user.id)
-      if (!error) setAccessRequests(data)
+      if (!error) {
+        // Filter out expired approved requests
+        const validRequests = data.map(req => {
+          if (req.status === "approved" && req.expires_at) {
+            const expirationDate = new Date(req.expires_at)
+            const now = new Date()
+            if (now > expirationDate) {
+              // Mark as expired in UI
+              return { ...req, status: "expired" }
+            }
+          }
+          return req
+        })
+        setAccessRequests(validRequests)
+      }
     }
     fetchRequests()
   }, [user])
@@ -98,7 +112,7 @@ const BrowseProjectsPage = () => {
       return
     }
     const req = accessRequests.find(r =>
-      r.paper_id === selectedPaper.id && (r.status === "pending" || r.status === "approved")
+      r.paper_id === selectedPaper.id && (r.status === "pending" || r.status === "approved" || r.status === "expired")
     )
     if (req) setRequestStatus(req.status)
     else setRequestStatus("none")
@@ -115,22 +129,54 @@ const BrowseProjectsPage = () => {
       (paper.authors || "").toLowerCase().includes(searchQuery.toLowerCase())
     const matchesCategory = !categoryFilter || paper.category === categoryFilter
     const matchesYear = !yearFilter || String(paper.year_published) === yearFilter
-    return matchesSearch && matchesCategory && matchesYear
+    
+    // Access filter logic
+    let matchesAccess = true
+    if (accessFilter !== "all" && user) {
+      const paperRequest = accessRequests.find(r => r.paper_id === paper.id)
+      
+      if (accessFilter === "approved") {
+        // Show only papers with approved (and not expired) access
+        matchesAccess = paperRequest?.status === "approved"
+      } else if (accessFilter === "pending") {
+        // Show only papers with pending requests
+        matchesAccess = paperRequest?.status === "pending"
+      } else if (accessFilter === "expiring") {
+        // Show papers expiring within 7 days
+        if (paperRequest?.status === "approved" && paperRequest?.expires_at) {
+          const expiresAt = new Date(paperRequest.expires_at)
+          const now = new Date()
+          const daysUntilExpiry = Math.ceil((expiresAt - now) / (1000 * 60 * 60 * 24))
+          matchesAccess = daysUntilExpiry > 0 && daysUntilExpiry <= 7
+        } else {
+          matchesAccess = false
+        }
+      }
+    }
+    
+    return matchesSearch && matchesCategory && matchesYear && matchesAccess
   })
 
-  // Sort papers
+  // Sort papers by date (most recent first)
   const sortedPapers = [...filteredPapers].sort((a, b) => {
-    switch (sortFilter) {
-      case "date":
-        return b.year_published - a.year_published
-      case "views":
-        return (b.views || 0) - (a.views || 0)
-      case "title":
-        return (a.title || "").localeCompare(b.title || "")
-      default:
-        return 0
-    }
+    return b.year_published - a.year_published
   })
+
+  // Calculate counts for quick filters
+  const accessCounts = {
+    approved: papers.filter(p => accessRequests.find(r => r.paper_id === p.id && r.status === "approved")).length,
+    pending: papers.filter(p => accessRequests.find(r => r.paper_id === p.id && r.status === "pending")).length,
+    expiring: papers.filter(p => {
+      const req = accessRequests.find(r => r.paper_id === p.id && r.status === "approved")
+      if (req?.expires_at) {
+        const expiresAt = new Date(req.expires_at)
+        const now = new Date()
+        const daysUntilExpiry = Math.ceil((expiresAt - now) / (1000 * 60 * 60 * 24))
+        return daysUntilExpiry > 0 && daysUntilExpiry <= 7
+      }
+      return false
+    }).length
+  }
 
   // Add a bookmark
   const addBookmark = async (paperId) => {
@@ -274,6 +320,27 @@ const BrowseProjectsPage = () => {
           <div className="flex flex-wrap items-center gap-2 sm:gap-3 flex-1 min-w-0">
             <span className="text-sm font-medium text-gray-600 hidden sm:block flex-shrink-0">Filters:</span>
             
+            {/* Access Filter Dropdown - Only show for logged-in users */}
+            {user && (
+              <div className="relative min-w-0 flex-shrink-0">
+                <select
+                  value={accessFilter}
+                  onChange={(e) => setAccessFilter(e.target.value)}
+                  className={`w-full min-w-[140px] max-w-[180px] sm:min-w-0 sm:max-w-none px-3 py-1.5 text-xs sm:text-sm border rounded-md focus:ring-1 focus:ring-blue-500 focus:border-blue-500 transition-colors ${
+                    accessFilter === "approved" ? "bg-green-50 border-green-300 text-green-800 font-medium" :
+                    accessFilter === "pending" ? "bg-yellow-50 border-yellow-300 text-yellow-800 font-medium" :
+                    accessFilter === "expiring" ? "bg-orange-50 border-orange-300 text-orange-800 font-medium" :
+                    "bg-gray-50 border-gray-200 hover:bg-white"
+                  }`}
+                >
+                  <option value="all">📚 All Papers ({papers.length})</option>
+                  <option value="approved">✅ My Approved ({accessCounts.approved})</option>
+                  <option value="pending">⏳ Pending ({accessCounts.pending})</option>
+                  <option value="expiring">⏰ Expiring Soon ({accessCounts.expiring})</option>
+                </select>
+              </div>
+            )}
+            
             <div className="relative min-w-0 flex-shrink-0">
               <select
                 value={categoryFilter}
@@ -304,20 +371,7 @@ const BrowseProjectsPage = () => {
               </select>
             </div>
             
-            <div className="relative min-w-0 flex-shrink-0">
-              <select
-                value={sortFilter}
-                onChange={(e) => setSortFilter(e.target.value)}
-                className="w-full min-w-[100px] max-w-[130px] sm:min-w-0 sm:max-w-none px-3 py-1.5 text-xs sm:text-sm border border-gray-200 rounded-md focus:ring-1 focus:ring-blue-500 focus:border-blue-500 bg-gray-50 hover:bg-white transition-colors"
-              >
-                <option value="relevance">Relevance</option>
-                <option value="date">Date</option>
-                <option value="views">Views</option>
-                <option value="title">Title</option>
-              </select>
-            </div>
-            
-            {(categoryFilter || yearFilter || sortFilter !== "relevance") && (
+            {(categoryFilter || yearFilter) && (
               <Button
                 variant="ghost"
                 size="sm"
@@ -325,7 +379,6 @@ const BrowseProjectsPage = () => {
                   setSearchQuery("")
                   setCategoryFilter("")
                   setYearFilter("")
-                  setSortFilter("relevance")
                 }}
                 className="flex-shrink-0 px-2 py-1 h-auto text-xs text-gray-500 hover:text-gray-700"
               >
@@ -367,14 +420,45 @@ const BrowseProjectsPage = () => {
             </div>
           ) : (
             <div className="grid grid-cols-1 sm:grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-4 sm:gap-6">
-              {sortedPapers.map((paper) => (
-                <Card key={paper.id} className="hover:shadow-md transition-all duration-200 hover:scale-[1.01] sm:hover:scale-[1.02]">
+              {sortedPapers.map((paper) => {
+                const paperRequest = accessRequests.find(r => r.paper_id === paper.id)
+                const hasApprovedAccess = paperRequest?.status === "approved"
+                const hasPendingRequest = paperRequest?.status === "pending"
+                const isExpiringSoon = paperRequest?.expires_at && (() => {
+                  const expiresAt = new Date(paperRequest.expires_at)
+                  const now = new Date()
+                  const daysUntilExpiry = Math.ceil((expiresAt - now) / (1000 * 60 * 60 * 24))
+                  return daysUntilExpiry > 0 && daysUntilExpiry <= 7
+                })()
+
+                return (
+                <Card key={paper.id} className={`hover:shadow-md transition-all duration-200 hover:scale-[1.01] sm:hover:scale-[1.02] ${hasApprovedAccess ? 'border-green-200 bg-green-50/30' : ''}`}>
                   <CardContent className="p-4 sm:p-6">
                     <div className="space-y-3 sm:space-y-4">
                       <div>
-                        <h3 className="font-semibold text-gray-900 text-base sm:text-lg leading-tight mb-2 line-clamp-2">
-                          {paper.title}
-                        </h3>
+                        <div className="flex items-start justify-between gap-2 mb-2">
+                          <h3 className="font-semibold text-gray-900 text-base sm:text-lg leading-tight line-clamp-2 flex-1">
+                            {paper.title}
+                          </h3>
+                          {hasApprovedAccess && (
+                            <Badge className="bg-green-600 text-white text-xs flex-shrink-0">
+                              ✓ Access
+                            </Badge>
+                          )}
+                          {hasPendingRequest && (
+                            <Badge className="bg-yellow-500 text-white text-xs flex-shrink-0">
+                              ⏳ Pending
+                            </Badge>
+                          )}
+                        </div>
+                        {isExpiringSoon && (
+                          <div className="bg-orange-100 border border-orange-200 rounded px-2 py-1 mb-2">
+                            <p className="text-xs text-orange-800 flex items-center">
+                              <span className="mr-1">⏰</span>
+                              Access expires in {Math.ceil((new Date(paperRequest.expires_at) - new Date()) / (1000 * 60 * 60 * 24))} days
+                            </p>
+                          </div>
+                        )}
                         <div className="flex items-center text-sm text-gray-600 mb-2">
                           <User className="w-3 h-3 sm:w-4 sm:h-4 mr-1 flex-shrink-0" />
                           <span className="truncate">{paper.authors}</span>
@@ -442,7 +526,8 @@ const BrowseProjectsPage = () => {
                     </div>
                   </CardContent>
                 </Card>
-              ))}
+                )
+              })}
             </div>
           )}
         </CardContent>
@@ -493,18 +578,41 @@ const BrowseProjectsPage = () => {
                     <Button className="bg-yellow-200 text-yellow-800 cursor-not-allowed text-sm sm:text-base" disabled>
                       Request Pending
                     </Button>
+                  ) : requestStatus === "expired" ? (
+                    <div className="flex flex-col gap-2">
+                      <Button className="bg-red-100 text-red-800 cursor-not-allowed text-sm sm:text-base" disabled>
+                        Access Expired
+                      </Button>
+                      <Button
+                        className="bg-blue-600 hover:bg-blue-700 text-white text-xs sm:text-sm"
+                        onClick={handleRequestAccess}
+                        disabled={requesting}
+                      >
+                        Request Access Again
+                      </Button>
+                    </div>
                   ) : requestStatus === "approved" ? (
-                    <Button 
-                      onClick={() => {
-                        setPdfToView({ url: selectedPaper.file_url, title: selectedPaper.title })
-                        setShowPDFViewer(true)
-                        setShowModal(false)
-                      }}
-                      className="bg-green-600 hover:bg-green-700 text-white text-sm sm:text-base"
-                    >
-                      <FileText className="w-4 h-4 mr-2" />
-                      Access Granted - View Paper
-                    </Button>
+                    <div className="flex flex-col gap-2 w-full">
+                      {(() => {
+                        const req = accessRequests.find(r => r.paper_id === selectedPaper.id && r.status === "approved")
+                        return req?.expires_at ? (
+                          <div className="bg-green-50 border border-green-200 rounded-md p-2 text-xs text-green-800">
+                            ⏰ Access expires: {new Date(req.expires_at).toLocaleDateString()} at {new Date(req.expires_at).toLocaleTimeString()}
+                          </div>
+                        ) : null
+                      })()}
+                      <Button 
+                        onClick={() => {
+                          setPdfToView({ url: selectedPaper.file_url, title: selectedPaper.title })
+                          setShowPDFViewer(true)
+                          setShowModal(false)
+                        }}
+                        className="bg-green-600 hover:bg-green-700 text-white text-sm sm:text-base w-full"
+                      >
+                        <FileText className="w-4 h-4 mr-2" />
+                        Access Granted - View Paper
+                      </Button>
+                    </div>
                   ) : (
                     <Button
                       className="bg-blue-600 hover:bg-blue-700 text-white text-sm sm:text-base"

@@ -14,6 +14,9 @@ const AccessRequestsPage = () => {
   const [rejectingId, setRejectingId] = useState(null);
   const [showViewModal, setShowViewModal] = useState(false);
   const [viewRequest, setViewRequest] = useState(null);
+  const [showApproveModal, setShowApproveModal] = useState(false);
+  const [approvingId, setApprovingId] = useState(null);
+  const [accessDuration, setAccessDuration] = useState("7"); // Default 7 days
   const [searchTerm, setSearchTerm] = useState("")
   const [filterStatus, setFilterStatus] = useState("all")
   const [accessRequests, setAccessRequests] = useState([])
@@ -117,35 +120,65 @@ const AccessRequestsPage = () => {
   }
 
   // Admin actions (approve/reject) - you can implement Supabase update here as needed
-  const handleApprove = async (requestId) => {
+  const handleApprove = (requestId) => {
+    setApprovingId(requestId);
+    setAccessDuration("7"); // Reset to default
+    setShowApproveModal(true);
+  };
+
+  const confirmApprove = async () => {
+    if (!accessDuration || accessDuration <= 0) {
+      showToast && showToast("Please select a valid access duration.", "warning");
+      return;
+    }
+
+    // Calculate expiration date
+    const expirationDate = new Date();
+    expirationDate.setDate(expirationDate.getDate() + parseInt(accessDuration));
+
     const { error } = await supabase
       .from("research_paper_access_requests")
-      .update({ status: "approved" })
-      .eq("id", requestId)
+      .update({ 
+        status: "approved",
+        approved_at: new Date().toISOString(),
+        expires_at: expirationDate.toISOString()
+      })
+      .eq("id", approvingId)
+    
     if (error) {
       showToast && showToast("Failed to approve request: " + error.message, "error");
     } else {
-      setAccessRequests(reqs => reqs.map(r => r.id === requestId ? { ...r, status: "approved" } : r));
+      setAccessRequests(reqs => reqs.map(r => r.id === approvingId ? { 
+        ...r, 
+        status: "approved",
+        approved_at: new Date().toISOString(),
+        expires_at: expirationDate.toISOString()
+      } : r));
+      
       // Log activity
       const { data: { session } } = await supabase.auth.getSession();
       const userId = session?.user?.id;
-      const req = accessRequests.find(r => r.id === requestId);
+      const req = accessRequests.find(r => r.id === approvingId);
       await supabase.from("activities").insert([
         {
           user_id: userId,
           type: "accept student request",
-          description: `Accepted access request for research paper: ${req?.paperTitle || requestId}`,
+          description: `Accepted access request for research paper: ${req?.paperTitle || approvingId} (Expires in ${accessDuration} days)`,
           timestamp: new Date().toISOString(),
-          target_id: requestId,
+          target_id: approvingId,
           meta: {
             student: req?.student_name,
             paper: req?.paperTitle,
+            access_duration: accessDuration,
+            expires_at: expirationDate.toISOString()
           },
         },
       ]);
-      showToast && showToast("Request approved!", "success");
+      showToast && showToast(`Request approved! Access granted for ${accessDuration} days.`, "success");
+      setShowApproveModal(false);
+      setApprovingId(null);
     }
-  }
+  };
 
   const handleReject = (requestId) => {
     setRejectingId(requestId);
@@ -405,6 +438,51 @@ const AccessRequestsPage = () => {
           )}
         </CardContent>
       </Card>
+      
+      {/* Approve with Duration Modal */}
+      {showApproveModal && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-lg shadow-lg p-6 w-full max-w-md">
+            <h2 className="text-lg font-semibold mb-2 text-green-700">✓ Approve Access Request</h2>
+            <p className="mb-4 text-gray-700">Set the duration for which the student will have access to the full paper:</p>
+            
+            <div className="mb-4">
+              <label className="block text-sm font-medium text-gray-700 mb-2">Access Duration</label>
+              <select
+                className="w-full border border-gray-300 rounded-md p-2 focus:ring-2 focus:ring-green-500 focus:border-transparent"
+                value={accessDuration}
+                onChange={(e) => setAccessDuration(e.target.value)}
+              >
+                <option value="1">1 Day</option>
+                <option value="3">3 Days</option>
+                <option value="7">7 Days (1 Week)</option>
+                <option value="14">14 Days (2 Weeks)</option>
+                <option value="30">30 Days (1 Month)</option>
+                <option value="60">60 Days (2 Months)</option>
+                <option value="90">90 Days (3 Months)</option>
+                <option value="180">180 Days (6 Months)</option>
+                <option value="365">365 Days (1 Year)</option>
+              </select>
+              
+              <div className="mt-3 p-3 bg-blue-50 border border-blue-200 rounded-md">
+                <p className="text-xs text-blue-800">
+                  <span className="font-semibold">⏰ Note:</span> Access will automatically expire after the selected duration. 
+                  The student will need to request access again if needed.
+                </p>
+              </div>
+            </div>
+            
+            <div className="flex justify-end gap-2">
+              <Button variant="outline" onClick={() => { setShowApproveModal(false); setApprovingId(null); }}>Cancel</Button>
+              <Button className="bg-green-600 hover:bg-green-700" onClick={confirmApprove}>
+                <CheckCircle className="w-4 h-4 mr-2" />
+                Approve Access
+              </Button>
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* Reject Reason Modal */}
       {showRejectModal && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">

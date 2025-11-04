@@ -16,6 +16,9 @@ const BookmarksPage = () => {
   const { showToast } = useToast();
   const navigate = useNavigate();
   const [searchTerm, setSearchTerm] = useState("")
+  const [categoryFilter, setCategoryFilter] = useState("")
+  const [yearFilter, setYearFilter] = useState("")
+  const [accessFilter, setAccessFilter] = useState("all") // "all", "approved", "pending"
   const [selectedPaper, setSelectedPaper] = useState(null)
   const [isModalOpen, setIsModalOpen] = useState(false)
   const [bookmarkedPapers, setBookmarkedPapers] = useState([])
@@ -69,12 +72,35 @@ const BookmarksPage = () => {
     fetchBookmarks()
   }, [user])
 
-  const filteredPapers = bookmarkedPapers.filter(
-    (paper) =>
+  const filteredPapers = bookmarkedPapers.filter((paper) => {
+    const matchesSearch =
       (paper.title || "").toLowerCase().includes(searchTerm.toLowerCase()) ||
       (paper.authors || "").toLowerCase().includes(searchTerm.toLowerCase()) ||
       (paper.category || "").toLowerCase().includes(searchTerm.toLowerCase())
-  )
+    
+    const matchesCategory = !categoryFilter || paper.category === categoryFilter
+    const matchesYear = !yearFilter || String(paper.year_published) === yearFilter
+    
+    // Access filter logic
+    let matchesAccess = true
+    if (accessFilter === "approved") {
+      matchesAccess = paper.access_request_status === "approved" || paper.status === "accepted" || paper.is_accessible
+    } else if (accessFilter === "pending") {
+      matchesAccess = paper.access_request_status === "pending"
+    }
+    
+    return matchesSearch && matchesCategory && matchesYear && matchesAccess
+  })
+
+  // Gather unique categories and years for filters
+  const categories = Array.from(new Set(bookmarkedPapers.map((p) => p.category).filter(Boolean)))
+  const years = Array.from(new Set(bookmarkedPapers.map((p) => p.year_published).filter(Boolean))).sort((a, b) => b - a)
+
+  // Calculate counts for access filters
+  const accessCounts = {
+    approved: bookmarkedPapers.filter(p => p.access_request_status === "approved" || p.status === "accepted" || p.is_accessible).length,
+    pending: bookmarkedPapers.filter(p => p.access_request_status === "pending").length
+  }
 
   // Badge rendering logic
   const renderStatusBadge = (paper) => {
@@ -250,6 +276,89 @@ const BookmarksPage = () => {
               onChange={(e) => setSearchTerm(e.target.value)}
               className="w-full pl-10 pr-4 py-2.5 sm:py-2 text-sm bg-white border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all"
             />
+          </div>
+        </div>
+      </div>
+
+      {/* Filters */}
+      <div className="bg-white rounded-lg border shadow-sm p-3 sm:p-4 overflow-hidden">
+        <div className="flex flex-col sm:flex-row sm:items-center gap-3 sm:gap-4 min-w-0">
+          <div className="flex flex-wrap items-center gap-2 sm:gap-3 flex-1 min-w-0">
+            <span className="text-sm font-medium text-gray-600 hidden sm:block flex-shrink-0">Filters:</span>
+            
+            {/* Access Filter Dropdown */}
+            <div className="relative min-w-0 flex-shrink-0">
+              <select
+                value={accessFilter}
+                onChange={(e) => setAccessFilter(e.target.value)}
+                className={`w-full min-w-[140px] max-w-[180px] sm:min-w-0 sm:max-w-none px-3 py-1.5 text-xs sm:text-sm border rounded-md focus:ring-1 focus:ring-blue-500 focus:border-blue-500 transition-colors ${
+                  accessFilter === "approved" ? "bg-green-50 border-green-300 text-green-800 font-medium" :
+                  accessFilter === "pending" ? "bg-yellow-50 border-yellow-300 text-yellow-800 font-medium" :
+                  "bg-gray-50 border-gray-200 hover:bg-white"
+                }`}
+              >
+                <option value="all">📚 All Bookmarks ({bookmarkedPapers.length})</option>
+                <option value="approved">✅ Approved Access ({accessCounts.approved})</option>
+                <option value="pending">⏳ Pending ({accessCounts.pending})</option>
+              </select>
+            </div>
+            
+            {/* Category Filter */}
+            {categories.length > 0 && (
+              <div className="relative min-w-0 flex-shrink-0">
+                <select
+                  value={categoryFilter}
+                  onChange={(e) => setCategoryFilter(e.target.value)}
+                  className="w-full min-w-[120px] max-w-[150px] sm:min-w-0 sm:max-w-none px-3 py-1.5 text-xs sm:text-sm border border-gray-200 rounded-md focus:ring-1 focus:ring-blue-500 focus:border-blue-500 bg-gray-50 hover:bg-white transition-colors"
+                >
+                  <option value="">All Categories</option>
+                  {categories.map((category) => (
+                    <option key={category} value={category}>
+                      {category}
+                    </option>
+                  ))}
+                </select>
+              </div>
+            )}
+            
+            {/* Year Filter */}
+            {years.length > 0 && (
+              <div className="relative min-w-0 flex-shrink-0">
+                <select
+                  value={yearFilter}
+                  onChange={(e) => setYearFilter(e.target.value)}
+                  className="w-full min-w-[90px] max-w-[120px] sm:min-w-0 sm:max-w-none px-3 py-1.5 text-xs sm:text-sm border border-gray-200 rounded-md focus:ring-1 focus:ring-blue-500 focus:border-blue-500 bg-gray-50 hover:bg-white transition-colors"
+                >
+                  <option value="">All Years</option>
+                  {years.map((year) => (
+                    <option key={year} value={year}>
+                      {year}
+                    </option>
+                  ))}
+                </select>
+              </div>
+            )}
+            
+            {/* Clear Button */}
+            {(categoryFilter || yearFilter || accessFilter !== "all") && (
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => {
+                  setSearchTerm("")
+                  setCategoryFilter("")
+                  setYearFilter("")
+                  setAccessFilter("all")
+                }}
+                className="flex-shrink-0 px-2 py-1 h-auto text-xs text-gray-500 hover:text-gray-700"
+              >
+                Clear
+              </Button>
+            )}
+          </div>
+          
+          <div className="text-xs text-gray-500 flex-shrink-0">
+            {filteredPapers.length} bookmarks
           </div>
         </div>
       </div>
