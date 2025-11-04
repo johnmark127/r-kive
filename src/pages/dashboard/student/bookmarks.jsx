@@ -8,6 +8,7 @@ import { Badge } from "@/components/ui/badge"
 import { Input } from "@/components/ui/input"
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog"
 import ToastManager, { useToast } from "@/components/ToastManager"
+import PDFViewer from "@/components/PDFViewer"
 import { FileText, Eye, Trash2, Search, Calendar, User, BookOpen, GitBranch } from "lucide-react"
 import { useNavigate } from "react-router-dom"
 
@@ -20,6 +21,8 @@ const BookmarksPage = () => {
   const [bookmarkedPapers, setBookmarkedPapers] = useState([])
   const [loading, setLoading] = useState(true)
   const [user, setUser] = useState(null)
+  const [showPDFViewer, setShowPDFViewer] = useState(false)
+  const [pdfToView, setPdfToView] = useState(null)
 
   // Get logged-in user
   useEffect(() => {
@@ -171,7 +174,9 @@ const BookmarksPage = () => {
         paper.is_accessible) &&
       fileLink
     ) {
-      window.open(fileLink, "_blank")
+      setPdfToView({ url: fileLink, title: paper.title })
+      setShowPDFViewer(true)
+      setIsModalOpen(false)
     }
   }
 
@@ -408,6 +413,18 @@ const BookmarksPage = () => {
           )}
         </DialogContent>
       </Dialog>
+
+      {/* PDF Viewer Modal */}
+      {showPDFViewer && pdfToView && (
+        <PDFViewer
+          fileUrl={pdfToView.url}
+          fileName={pdfToView.title}
+          onClose={() => {
+            setShowPDFViewer(false)
+            setPdfToView(null)
+          }}
+        />
+      )}
     </div>
   )
 }

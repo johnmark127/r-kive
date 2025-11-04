@@ -3,6 +3,7 @@
 import { useState, useEffect } from "react"
 // ...existing code...
 import ToastManager, { useToast } from "@/components/ToastManager"
+import PDFViewer from "@/components/PDFViewer"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
@@ -18,6 +19,8 @@ const BrowseProjectsPage = () => {
   const [bookmarkedPapers, setBookmarkedPapers] = useState(new Set())
   const [selectedPaper, setSelectedPaper] = useState(null)
   const [showModal, setShowModal] = useState(false)
+  const [showPDFViewer, setShowPDFViewer] = useState(false)
+  const [pdfToView, setPdfToView] = useState(null)
   const [papers, setPapers] = useState([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState(null)
@@ -491,11 +494,16 @@ const BrowseProjectsPage = () => {
                       Request Pending
                     </Button>
                   ) : requestStatus === "approved" ? (
-                    <Button asChild className="bg-green-600 hover:bg-green-700 text-white text-sm sm:text-base" >
-                      <a href={selectedPaper.file_url} target="_blank" rel="noopener noreferrer">
-                        <FileText className="w-4 h-4 mr-2" />
-                        Access Granted - View Paper
-                      </a>
+                    <Button 
+                      onClick={() => {
+                        setPdfToView({ url: selectedPaper.file_url, title: selectedPaper.title })
+                        setShowPDFViewer(true)
+                        setShowModal(false)
+                      }}
+                      className="bg-green-600 hover:bg-green-700 text-white text-sm sm:text-base"
+                    >
+                      <FileText className="w-4 h-4 mr-2" />
+                      Access Granted - View Paper
                     </Button>
                   ) : (
                     <Button
@@ -553,6 +561,18 @@ const BrowseProjectsPage = () => {
             </div>
           </div>
         </div>
+      )}
+
+      {/* PDF Viewer Modal */}
+      {showPDFViewer && pdfToView && (
+        <PDFViewer
+          fileUrl={pdfToView.url}
+          fileName={pdfToView.title}
+          onClose={() => {
+            setShowPDFViewer(false)
+            setPdfToView(null)
+          }}
+        />
       )}
     </div>
   )
