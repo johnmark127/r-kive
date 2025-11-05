@@ -1,5 +1,5 @@
 import React, { useEffect, useRef, useState } from "react";
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import AuthModal from "../components/AuthModal";
 import ToastManager from "../components/ToastManager";
 import "../components/AuthModal.css";
@@ -8,6 +8,7 @@ import { supabase } from "@/supabase/client";
 
 
 function Index() {
+    const navigate = useNavigate();
     // Hide the blue header background and Login button when scrolled down; show again at the very top
     const headerRef = useRef(null);
     const loginBtnRef = useRef(null);
@@ -46,7 +47,14 @@ function Index() {
     }, [searchValue]);
 
     const handleSuggestionClick = (name) => {
-        window.location.href = `/search?query=${encodeURIComponent(name)}`;
+        navigate(`/search?query=${encodeURIComponent(name)}`);
+    };
+
+    const handleSearchSubmit = (e) => {
+        e.preventDefault();
+        if (searchValue.trim()) {
+            navigate(`/search?query=${encodeURIComponent(searchValue.trim())}`);
+        }
     };
 
     const openAuthModal = () => {
@@ -144,7 +152,7 @@ function Index() {
                         <div className="col-lg-8 col-12 mx-auto">
                             <h1 className="text-white text-center display-4 fw-bold mb-3">Discover. Explore. Learn</h1>
                             <h4 className="text-white text-center mb-5 opacity-90">Your Gateway to OMSC Capstone Projects</h4>
-                            <form method="get" className="custom-form mt-4 pt-2 mb-lg-0 mb-5" role="search" action="search_results.php">
+                            <form onSubmit={handleSearchSubmit} className="custom-form mt-4 pt-2 mb-lg-0 mb-5" role="search">
                                 <div className="modern-search-container" style={{ position: 'relative' }}>
                                     <div className="search-input-wrapper">
                                         <span className="search-icon">🔍</span>
@@ -406,21 +414,80 @@ function Index() {
                                     
                                     <div className="papers-carousel">
                                         <div className="paper-card active">
-                                            <div className="card shadow-sm">
+                                            <div className="card shadow-sm" style={{ borderRadius: 20, minHeight: 340 }}>
                                                 <div className="card-body">
-                                                    <h5 className="card-title mb-2">
+                                                    <h5 className="card-title mb-2" style={{ fontWeight: 700, fontSize: '1.25rem', color: '#245884' }}>
                                                         {categories[selectedCategoryIdx].papers[currentPaperIdx].title}
                                                     </h5>
-                                                    <div className="text-muted mb-1">
+                                                    <div className="text-muted mb-1" style={{ fontSize: 15 }}>
                                                         Year: {categories[selectedCategoryIdx].papers[currentPaperIdx].year}
                                                     </div>
                                                     {categories[selectedCategoryIdx].papers[currentPaperIdx].image && (
                                                         <img 
                                                             src={categories[selectedCategoryIdx].papers[currentPaperIdx].image} 
                                                             alt="paper" 
-                                                            className="paper-image" 
+                                                            style={{ width: '100%', height: 160, objectFit: 'cover', borderRadius: 10, margin: '10px 0' }}
                                                         />
                                                     )}
+                                                    {/* Abstract */}
+                                                    {categories[selectedCategoryIdx].papers[currentPaperIdx].abstract && (
+                                                        <div className="mt-2" style={{ fontSize: 15, color: '#222', minHeight: 40 }}>
+                                                            {categories[selectedCategoryIdx].papers[currentPaperIdx].abstract.length > 180 
+                                                                ? categories[selectedCategoryIdx].papers[currentPaperIdx].abstract.slice(0, 180) + '...' 
+                                                                : categories[selectedCategoryIdx].papers[currentPaperIdx].abstract}
+                                                        </div>
+                                                    )}
+                                                    {/* Action Buttons */}
+                                                    <div className="d-flex gap-2 mt-3" style={{ width: '100%' }}>
+                                                        <button
+                                                            className="modern-btn"
+                                                            style={{
+                                                                background: '#245884',
+                                                                color: '#fff',
+                                                                border: 'none',
+                                                                fontWeight: 600,
+                                                                fontSize: 14,
+                                                                borderRadius: 8,
+                                                                padding: '10px 16px',
+                                                                flex: 1,
+                                                                minWidth: 0,
+                                                                boxShadow: '0 2px 6px rgba(36,88,132,0.15)',
+                                                                transition: 'all 0.2s ease',
+                                                                cursor: 'pointer',
+                                                                whiteSpace: 'nowrap',
+                                                            }}
+                                                            onClick={() => {
+                                                                window.scrollTo({ top: 0, behavior: 'smooth' });
+                                                                setTimeout(() => setIsAuthModalOpen(true), 400);
+                                                            }}
+                                                        >
+                                                            Read
+                                                        </button>
+                                                        <button
+                                                            className="modern-btn"
+                                                            style={{
+                                                                background: '#fff',
+                                                                color: '#245884',
+                                                                border: '1.5px solid #245884',
+                                                                fontWeight: 600,
+                                                                fontSize: 14,
+                                                                borderRadius: 8,
+                                                                padding: '10px 16px',
+                                                                flex: 1,
+                                                                minWidth: 0,
+                                                                boxShadow: '0 2px 6px rgba(36,88,132,0.1)',
+                                                                transition: 'all 0.2s ease',
+                                                                cursor: 'pointer',
+                                                                whiteSpace: 'nowrap',
+                                                            }}
+                                                            onClick={() => {
+                                                                window.scrollTo({ top: 0, behavior: 'smooth' });
+                                                                setTimeout(() => setIsAuthModalOpen(true), 400);
+                                                            }}
+                                                        >
+                                                            Citation
+                                                        </button>
+                                                    </div>
                                                 </div>
                                             </div>
                                         </div>

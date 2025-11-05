@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from "react";
 import { useBrowseTopics } from "@/hooks/useBrowseTopics";
-import { useLocation } from "react-router-dom";
+import { useLocation, useNavigate } from "react-router-dom";
 import { supabase } from "@/supabase/client";
 
 function useQuery() {
@@ -8,6 +8,7 @@ function useQuery() {
 }
 
 const SearchResults = () => {
+  const navigate = useNavigate();
   const query = useQuery().get("query") || "";
   const category = useQuery().get("category") || "";
   const year = useQuery().get("year") || "";
@@ -28,7 +29,10 @@ const SearchResults = () => {
         let filteredResults = allResults;
         // Filter by category and year if set
         if (category) {
-          filteredResults = filteredResults.filter(p => p.category === category);
+          // Case-insensitive category matching
+          filteredResults = filteredResults.filter(p => 
+            p.category && p.category.toLowerCase() === category.toLowerCase()
+          );
         }
         if (year) {
           filteredResults = filteredResults.filter(p => String(p.year_published) === String(year));
@@ -74,7 +78,7 @@ const SearchResults = () => {
               let url = `/search?query=${encodeURIComponent(value)}`;
               if (category) url += `&category=${encodeURIComponent(category)}`;
               if (year) url += `&year=${encodeURIComponent(year)}`;
-              window.location.href = url;
+              navigate(url);
             }}
             style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', gap: 16, marginTop: 32, marginBottom: 8, flexWrap: 'wrap' }}
             autoComplete="off"
@@ -107,13 +111,41 @@ const SearchResults = () => {
                 </svg>
               </span>
             </div>
-            <select name="category" defaultValue={category} style={{ borderRadius: '999px', padding: '12px 24px', border: 'none', fontSize: '1.08rem', background: '#fff', color: '#245884', fontWeight: 500, boxShadow: '0 2px 12px rgba(36,88,132,0.08)', outline: 'none', transition: 'box-shadow 0.2s' }}>
+            <select 
+              name="category" 
+              defaultValue={category} 
+              onChange={(e) => {
+                const value = e.target.form.elements.search.value.trim();
+                const newCategory = e.target.value;
+                const currentYear = e.target.form.elements.year.value;
+                let url = `/search?query=${encodeURIComponent(value)}`;
+                if (newCategory) url += `&category=${encodeURIComponent(newCategory)}`;
+                if (currentYear) url += `&year=${encodeURIComponent(currentYear)}`;
+                navigate(url);
+              }}
+              style={{ borderRadius: '999px', padding: '12px 24px', border: 'none', fontSize: '1.08rem', background: '#fff', color: '#245884', fontWeight: 500, boxShadow: '0 2px 12px rgba(36,88,132,0.08)', outline: 'none', transition: 'box-shadow 0.2s', cursor: 'pointer' }}
+            >
               <option value="">All Categories</option>
               {categories && categories.map((cat) => (
-                <option key={cat.id || cat.name} value={cat.name}>{cat.name}</option>
+                <option key={cat.id || cat.name} value={cat.original_name || cat.name}>
+                  {cat.name}
+                </option>
               ))}
             </select>
-            <select name="year" defaultValue={year} style={{ borderRadius: '999px', padding: '12px 24px', border: 'none', fontSize: '1.08rem', background: '#fff', color: '#245884', fontWeight: 500, boxShadow: '0 2px 12px rgba(36,88,132,0.08)', outline: 'none', transition: 'box-shadow 0.2s' }}>
+            <select 
+              name="year" 
+              defaultValue={year} 
+              onChange={(e) => {
+                const value = e.target.form.elements.search.value.trim();
+                const currentCategory = e.target.form.elements.category.value;
+                const newYear = e.target.value;
+                let url = `/search?query=${encodeURIComponent(value)}`;
+                if (currentCategory) url += `&category=${encodeURIComponent(currentCategory)}`;
+                if (newYear) url += `&year=${encodeURIComponent(newYear)}`;
+                navigate(url);
+              }}
+              style={{ borderRadius: '999px', padding: '12px 24px', border: 'none', fontSize: '1.08rem', background: '#fff', color: '#245884', fontWeight: 500, boxShadow: '0 2px 12px rgba(36,88,132,0.08)', outline: 'none', transition: 'box-shadow 0.2s', cursor: 'pointer' }}
+            >
               <option value="">All Years</option>
               {[2025,2024,2023,2022].map(y => (
                 <option key={y} value={y}>{y}</option>
