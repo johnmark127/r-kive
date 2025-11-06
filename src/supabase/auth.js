@@ -91,3 +91,74 @@ export const logoutUser = async () => {
   }
   return { success: true };
 };
+
+// Send OTP to email for student login
+export const sendOTPToEmail = async (email) => {
+  try {
+    const { data, error } = await supabase.auth.signInWithOtp({
+      email: email,
+      options: {
+        shouldCreateUser: false, // Don't create new users, only send OTP to existing ones
+      }
+    });
+
+    if (error) {
+      console.error('Error sending OTP:', error);
+      return { success: false, message: error.message || 'Failed to send OTP' };
+    }
+
+    return { success: true, message: 'OTP sent to your email' };
+  } catch (error) {
+    console.error('Error sending OTP:', error);
+    return { success: false, message: 'Failed to send OTP' };
+  }
+};
+
+// Verify OTP code
+export const verifyOTP = async (email, token) => {
+  try {
+    const { data, error } = await supabase.auth.verifyOtp({
+      email: email,
+      token: token,
+      type: 'email'
+    });
+
+    if (error) {
+      console.error('Error verifying OTP:', error);
+      return { success: false, message: error.message || 'Invalid OTP code' };
+    }
+
+    // Get user profile data
+    const user = data.user;
+    const { data: userData, error: userError } = await supabase
+      .from('users')
+      .select('*')
+      .eq('id', user.id)
+      .single();
+
+    if (userError || !userData) {
+      return { success: false, message: 'User account not properly configured.' };
+    }
+
+    let redirect = '/student';
+    if (userData.role === USER_ROLES.ADMIN) redirect = '/admin';
+    else if (userData.role === USER_ROLES.SUPERADMIN) redirect = '/superadmin';
+    else if (userData.role === USER_ROLES.ADVISER) redirect = '/adviser';
+
+    return {
+      success: true,
+      user: {
+        uid: user.id,
+        email: user.email,
+        role: userData.role,
+        displayName: user.email,
+        needs_password_change: userData.needs_password_change,
+        ...userData
+      },
+      redirect
+    };
+  } catch (error) {
+    console.error('Error verifying OTP:', error);
+    return { success: false, message: 'Failed to verify OTP' };
+  }
+};

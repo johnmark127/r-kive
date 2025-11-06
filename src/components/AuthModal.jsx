@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { loginUser, registerUser, resetPassword } from '../supabase/auth';
+import { loginUser, registerUser, resetPassword, sendOTPToEmail, verifyOTP } from '../supabase/auth';
 import Loading from './Loading';
 import { useToast } from './ToastManager';
 import TermsOfUseModal from './TermsOfUseModal';
@@ -8,10 +8,13 @@ import PrivacyPolicyModal from './PrivacyPolicyModal';
 const AuthModal = ({ isOpen, onClose }) => {
     const [isRegisterMode, setIsRegisterMode] = useState(false);
     const [isForgotPasswordMode, setIsForgotPasswordMode] = useState(false);
+    const [isOTPMode, setIsOTPMode] = useState(false);
     const [showPassword, setShowPassword] = useState({});
     const [loading, setLoading] = useState(false);
     const [showTermsModal, setShowTermsModal] = useState(false);
     const [showPrivacyModal, setShowPrivacyModal] = useState(false);
+    const [pendingEmail, setPendingEmail] = useState('');
+    const [otpCode, setOtpCode] = useState('');
     const { showToast } = useToast();
     const [loginData, setLoginData] = useState({
         email: '',
@@ -37,6 +40,9 @@ const AuthModal = ({ isOpen, onClose }) => {
             setShowPassword({});
             setIsRegisterMode(false);
             setIsForgotPasswordMode(false);
+            setIsOTPMode(false);
+            setPendingEmail('');
+            setOtpCode('');
         }
     }, [isOpen]);
 
@@ -73,6 +79,23 @@ const AuthModal = ({ isOpen, onClose }) => {
             const result = await loginUser(loginData.email, loginData.password);
             
             if (result.success) {
+                // Check if user is a student - require OTP
+                if (result.user.role === 'student') {
+                    // Send OTP to email
+                    const otpResult = await sendOTPToEmail(loginData.email);
+                    
+                    if (otpResult.success) {
+                        setPendingEmail(loginData.email);
+                        setIsOTPMode(true);
+                        showToast('OTP code sent to your email', 'info');
+                    } else {
+                        showToast('Failed to send OTP. Please try again.', 'error');
+                    }
+                    setLoading(false);
+                    return;
+                }
+                
+                // Non-student users login normally
                 showToast(`Welcome back, ${result.user.displayName}!`, 'success');
                 onClose();
                 
@@ -88,8 +111,6 @@ const AuthModal = ({ isOpen, onClose }) => {
                         window.location.href = '/superadmin';
                     } else if (result.user.role === 'adviser') {
                         window.location.href = '/adviser';
-                    } else {
-                        window.location.href = '/student';
                     }
                 }, 1000);
             } else {
@@ -97,7 +118,9 @@ const AuthModal = ({ isOpen, onClose }) => {
             }
         } catch (error) {
             console.error('Login error:', error);
-            showToast('An unexpected error occurred during login', 'error');
+            // Send to error tracking service in production
+            // Example: Sentry.captureException(error);
+            showToast('Unable to log in. Please check your connection and try again. If the issue persists, contact support.', 'error');
         } finally {
             setLoading(false);
         }
@@ -120,8 +143,16 @@ const AuthModal = ({ isOpen, onClose }) => {
             return;
         }
 
-        if (registerData.password.length < 6) {
-            showToast('Password must be at least 6 characters long', 'error');
+        // Enhanced password strength validation
+        if (registerData.password.length < 8) {
+            showToast('Password must be at least 8 characters long', 'error');
+            setLoading(false);
+            return;
+        }
+
+        const passwordRegex = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&])[A-Za-z\d@$!%*?&]{8,}$/;
+        if (!passwordRegex.test(registerData.password)) {
+            showToast('Password must contain at least one uppercase letter, one lowercase letter, one number, and one special character (@$!%*?&)', 'error');
             setLoading(false);
             return;
         }
@@ -144,7 +175,39 @@ const AuthModal = ({ isOpen, onClose }) => {
             }
         } catch (error) {
             console.error('Registration error:', error);
-            showToast('An unexpected error occurred during registration', 'error');
+            // Send to error tracking service in production
+            // Example: Sentry.captureException(error);
+            showToast('Unable to complete registration. Please check your connection and try again. If the issue persists, contact support.', 'error');
+        } finally {
+            setLoading(false);
+        }
+    };
+
+    const handleOTPSubmit = async (e) => {
+        e.preventDefault();
+        setLoading(true);
+
+        try {
+            const result = await verifyOTP(pendingEmail, otpCode);
+
+            if (result.success) {
+                showToast(`Welcome back!`, 'success');
+                
+                // Store user info
+                localStorage.setItem('user', JSON.stringify(result.user));
+                
+                onClose();
+                
+                // Redirect to student dashboard
+                setTimeout(() => {
+                    window.location.href = '/student';
+                }, 1000);
+            } else {
+                showToast(result.message || 'Invalid OTP code', 'error');
+            }
+        } catch (error) {
+            console.error('OTP verification error:', error);
+            showToast('Unable to verify code. Please try again.', 'error');
         } finally {
             setLoading(false);
         }
@@ -174,7 +237,9 @@ const AuthModal = ({ isOpen, onClose }) => {
             }
         } catch (error) {
             console.error('Forgot password error:', error);
-            showToast('An unexpected error occurred while sending reset email', 'error');
+            // Send to error tracking service in production
+            // Example: Sentry.captureException(error);
+            showToast('Unable to send password reset email. Please check your connection and try again. If the issue persists, contact support.', 'error');
         } finally {
             setLoading(false);
         }
@@ -200,7 +265,71 @@ const AuthModal = ({ isOpen, onClose }) => {
             {loading && <Loading overlay={true} message="Processing..." />}
             <div className="modal-content">
                 <span className="close-modal" onClick={onClose}>&times;</span>
-                <div className={`modal-container ${isRegisterMode ? 'active' : ''} ${isForgotPasswordMode ? 'forgot-active' : ''}`}>
+                <div className={`modal-container ${isRegisterMode ? 'active' : ''} ${isForgotPasswordMode ? 'forgot-active' : ''} ${isOTPMode ? 'otp-active' : ''}`}>
+                    {/* OTP Verification Form */}
+                    <div className={`form-box verification-otp ${isOTPMode ? 'active' : ''}`}>
+                        <form onSubmit={handleOTPSubmit}>
+                            <h1>Enter OTP Code</h1>
+                            <p style={{ fontSize: '14px', color: '#666', marginBottom: '20px', textAlign: 'center' }}>
+                                We've sent a 6-digit code to<br />
+                                <strong>{pendingEmail}</strong>
+                            </p>
+                            <div className="input-box">
+                                <input
+                                    type="text"
+                                    name="otpCode"
+                                    placeholder="000000"
+                                    required
+                                    maxLength="6"
+                                    pattern="[0-9]{6}"
+                                    value={otpCode}
+                                    onChange={(e) => setOtpCode(e.target.value.replace(/\D/g, ''))}
+                                    style={{ textAlign: 'center', fontSize: '24px', letterSpacing: '8px' }}
+                                    autoFocus
+                                />
+                                <i className='bx bxs-lock-alt'></i>
+                            </div>
+                            <button type="submit" className="btn" disabled={loading || otpCode.length !== 6}>
+                                {loading ? (
+                                    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px' }}>
+                                        <Loading size="small" />
+                                        Verifying...
+                                    </div>
+                                ) : (
+                                    'Verify Code'
+                                )}
+                            </button>
+                            <div className="back-to-login" style={{ marginTop: '20px' }}>
+                                <a href="#" onClick={(e) => {
+                                    e.preventDefault();
+                                    setIsOTPMode(false);
+                                    setPendingEmail('');
+                                    setOtpCode('');
+                                }}>Back to Login</a>
+                            </div>
+                            <div style={{ textAlign: 'center', marginTop: '15px', fontSize: '14px' }}>
+                                <a 
+                                    href="#" 
+                                    onClick={async (e) => {
+                                        e.preventDefault();
+                                        if (loading) return;
+                                        setLoading(true);
+                                        const result = await sendOTPToEmail(pendingEmail);
+                                        setLoading(false);
+                                        if (result.success) {
+                                            showToast('New OTP code sent', 'success');
+                                        } else {
+                                            showToast('Failed to resend code', 'error');
+                                        }
+                                    }}
+                                    style={{ color: '#245884', textDecoration: 'underline', fontWeight: '500', cursor: 'pointer' }}
+                                >
+                                    Resend Code
+                                </a>
+                            </div>
+                        </form>
+                    </div>
+                    
                     {/* Login Form */}
                     <div className="form-box login">
                         <form onSubmit={handleLoginSubmit}>
@@ -348,6 +477,16 @@ const AuthModal = ({ isOpen, onClose }) => {
                                     onClick={() => togglePasswordVisibility('registerPassword')}
                                     style={{ cursor: 'pointer', position: 'absolute', right: '45px', top: '50%', transform: 'translateY(-50%)' }}
                                 ></i>
+                            </div>
+                            <div style={{ 
+                                fontSize: '12px', 
+                                color: '#666', 
+                                marginTop: '-12px', 
+                                marginBottom: '12px',
+                                paddingLeft: '4px',
+                                lineHeight: '1.4'
+                            }}>
+                                Must be 8+ characters with uppercase, lowercase, number, and special character (@$!%*?&)
                             </div>
                             <div className="input-box">
                                 <input
