@@ -3,13 +3,29 @@
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
-import { Settings, User, Shield, Save, Eye, EyeOff, Upload, Camera, Clock, MapPin } from "lucide-react"
-import { useState } from "react"
+import { Settings, User, Shield, Save, Eye, EyeOff, Upload, Camera, Clock, MapPin, Lock, Edit, X } from "lucide-react"
+import { useState, useEffect } from "react"
+import { supabase } from "../../../supabase/client"
+import { useProfilePictureUpload } from "../../../hooks/useProfilePictureUpload"
 
 const SettingsPage = () => {
   const [showPassword, setShowPassword] = useState(false)
   const [activeTab, setActiveTab] = useState("profile")
   const [profilePicture, setProfilePicture] = useState("/admin-profile.png")
+  const [currentUser, setCurrentUser] = useState(null)
+  const [isEditingEmail, setIsEditingEmail] = useState(false)
+  const [uploadError, setUploadError] = useState("")
+  const [uploadSuccess, setUploadSuccess] = useState("")
+  
+  // Profile picture upload hook
+  const {
+    uploading: uploadingProfilePicture,
+    uploadProgress,
+    uploadProfilePicture,
+    removeProfilePicture,
+    updateUserProfilePicture
+  } = useProfilePictureUpload()
+
   const [settings, setSettings] = useState({
     // Profile Settings
     adminName: "Administrator",
@@ -25,6 +41,55 @@ const SettingsPage = () => {
     twoFactorAuth: false,
   })
 
+  // Get current user data
+  useEffect(() => {
+    const getCurrentUser = async () => {
+      try {
+        const { data: { session }, error } = await supabase.auth.getSession()
+        if (error) {
+          console.error('Error getting session:', error)
+          return
+        }
+        
+        if (session?.user) {
+          const localUser = JSON.parse(localStorage.getItem("user") || "{}")
+          if (localUser.uid) {
+            setCurrentUser(localUser)
+            // Update settings with real user data
+            setSettings(prev => ({
+              ...prev,
+              adminName: localUser.firstName && localUser.lastName 
+                ? `${localUser.firstName} ${localUser.lastName}` 
+                : localUser.name || "Administrator",
+              email: localUser.email || session.user.email || "",
+            }))
+            
+            // Set profile picture from database
+            if (localUser.profile_picture_url) {
+              setProfilePicture(localUser.profile_picture_url)
+            }
+          } else {
+            // Fallback to session data
+            const userData = {
+              uid: session.user.id,
+              email: session.user.email,
+              role: 'admin'
+            }
+            setCurrentUser(userData)
+            setSettings(prev => ({
+              ...prev,
+              email: session.user.email || "",
+            }))
+          }
+        }
+      } catch (error) {
+        console.error('Error fetching user:', error)
+      }
+    }
+
+    getCurrentUser()
+  }, [])
+
   const handleInputChange = (field, value) => {
     setSettings((prev) => ({
       ...prev,
@@ -32,15 +97,91 @@ const SettingsPage = () => {
     }))
   }
 
-  const handleProfilePictureUpload = (event) => {
+  const handleProfilePictureUpload = async (event) => {
     const file = event.target.files[0]
-    if (file) {
-      const reader = new FileReader()
-      reader.onload = (e) => {
-        setProfilePicture(e.target.result)
+    if (!file || !currentUser) return
+
+    // Clear previous messages
+    setUploadError("")
+    setUploadSuccess("")
+
+    try {
+      // Upload to Supabase storage
+      const uploadResult = await uploadProfilePicture(file, currentUser.uid)
+      
+      if (uploadResult.success) {
+        // Update database
+        const dbResult = await updateUserProfilePicture(currentUser.uid, uploadResult.url)
+        
+        if (dbResult.success) {
+          // Update local state
+          setProfilePicture(uploadResult.url)
+          
+          // Update localStorage
+          const updatedUser = { ...currentUser, profile_picture_url: uploadResult.url }
+          localStorage.setItem("user", JSON.stringify(updatedUser))
+          setCurrentUser(updatedUser)
+          
+          setUploadSuccess("Profile picture updated successfully!")
+          
+          // Clear success message after 3 seconds
+          setTimeout(() => setUploadSuccess(""), 3000)
+        } else {
+          throw new Error(dbResult.error)
+        }
+      } else {
+        throw new Error(uploadResult.error)
       }
-      reader.readAsDataURL(file)
+    } catch (error) {
+      console.error('Error uploading profile picture:', error)
+      setUploadError(error.message || 'Failed to upload profile picture')
     }
+    
+    // Clear the file input
+    event.target.value = ''
+  }
+
+  const handleRemoveProfilePicture = async () => {
+    if (!currentUser) return
+
+    setUploadError("")
+    setUploadSuccess("")
+
+    try {
+      const result = await removeProfilePicture(currentUser.uid)
+      
+      if (result.success) {
+        setProfilePicture("/admin-profile.png")
+        
+        const updatedUser = { ...currentUser, profile_picture_url: null }
+        localStorage.setItem("user", JSON.stringify(updatedUser))
+        setCurrentUser(updatedUser)
+        
+        setUploadSuccess("Profile picture removed successfully!")
+        setTimeout(() => setUploadSuccess(""), 3000)
+      } else {
+        throw new Error(result.error)
+      }
+    } catch (error) {
+      console.error('Error removing profile picture:', error)
+      setUploadError(error.message || 'Failed to remove profile picture')
+    }
+  }
+
+  const handleEditEmail = () => {
+    setIsEditingEmail(true)
+  }
+
+  const handleSaveEmail = () => {
+    // Here you would typically call an API to update the email
+    console.log('Saving new email:', settings.email)
+    setIsEditingEmail(false)
+    alert('Email updated successfully!')
+  }
+
+  const handleCancelEmailEdit = () => {
+    // Reset email to original value if needed
+    setIsEditingEmail(false)
   }
 
   const handleSave = (section) => {
@@ -160,14 +301,32 @@ const SettingsPage = () => {
                 {/* Profile Picture Section */}
                 <div className="flex items-center space-x-6 p-4 bg-gray-50 rounded-lg">
                   <div className="relative">
-                    <img
-                      src={profilePicture || "/placeholder.svg"}
-                      alt="Profile Picture"
-                      className="w-20 h-20 rounded-full object-cover border-4 border-white shadow-md"
-                    />
-                    <div className="absolute -bottom-1 -right-1 bg-blue-600 rounded-full p-1.5 cursor-pointer hover:bg-blue-700 transition-colors">
-                      <Camera className="w-3 h-3 text-white" />
+                    <div 
+                      className="relative cursor-pointer group"
+                      onClick={() => document.getElementById('admin-profile-picture-input').click()}
+                    >
+                      <img
+                        src={profilePicture || "/placeholder.svg"}
+                        alt="Profile Picture"
+                        className="w-20 h-20 rounded-full object-cover border-4 border-white shadow-md group-hover:opacity-75 transition-opacity"
+                      />
+                      {uploadingProfilePicture && (
+                        <div className="absolute inset-0 bg-black bg-opacity-50 rounded-full flex items-center justify-center">
+                          <div className="text-white text-xs font-medium">{uploadProgress}%</div>
+                        </div>
+                      )}
+                      <div className="absolute -bottom-1 -right-1 bg-blue-600 rounded-full p-1.5 cursor-pointer hover:bg-blue-700 transition-colors group-hover:bg-blue-700">
+                        <Camera className="w-3 h-3 text-white" />
+                      </div>
                     </div>
+                    <input
+                      id="admin-profile-picture-input"
+                      type="file"
+                      accept="image/*"
+                      onChange={handleProfilePictureUpload}
+                      className="hidden"
+                      disabled={uploadingProfilePicture}
+                    />
                   </div>
                   <div className="flex-1">
                     <h3 className="font-medium text-gray-900 mb-2">Profile Picture</h3>
@@ -175,21 +334,35 @@ const SettingsPage = () => {
                       Upload a new profile picture. Recommended size: 200x200px
                     </p>
                     <div className="flex space-x-3">
-                      <label className="cursor-pointer">
-                        <input type="file" accept="image/*" onChange={handleProfilePictureUpload} className="hidden" />
-                        <Button variant="outline" size="sm" className="flex items-center bg-transparent">
-                          <Upload className="w-4 h-4 mr-2" />
-                          Upload New
-                        </Button>
-                      </label>
                       <Button
                         variant="outline"
                         size="sm"
-                        onClick={() => setProfilePicture("/admin-profile.png")}
+                        onClick={() => document.getElementById('admin-profile-picture-input').click()}
+                        disabled={uploadingProfilePicture}
+                        className="flex items-center bg-transparent"
+                      >
+                        <Upload className="w-4 h-4 mr-2" />
+                        {uploadingProfilePicture ? 'Uploading...' : 'Upload New'}
+                      </Button>
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={handleRemoveProfilePicture}
+                        disabled={uploadingProfilePicture || profilePicture === "/admin-profile.png"}
                       >
                         Remove
                       </Button>
                     </div>
+                    {uploadError && (
+                      <div className="text-xs text-red-600 mt-2 p-2 bg-red-50 rounded border border-red-200">
+                        {uploadError}
+                      </div>
+                    )}
+                    {uploadSuccess && (
+                      <div className="text-xs text-green-600 mt-2 p-2 bg-green-50 rounded border border-green-200">
+                        {uploadSuccess}
+                      </div>
+                    )}
                   </div>
                 </div>
 
@@ -203,13 +376,65 @@ const SettingsPage = () => {
                     />
                   </div>
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">Email Address</label>
-                    <Input
-                      type="email"
-                      value={settings.email}
-                      onChange={(e) => handleInputChange("email", e.target.value)}
-                      placeholder="Enter email address"
-                    />
+                    <div className="flex items-center justify-between mb-2">
+                      <label className="block text-sm font-medium text-gray-700">
+                        Email Address
+                        {!isEditingEmail && (
+                          <span className="ml-1 text-xs text-gray-500">(Account Email)</span>
+                        )}
+                      </label>
+                      {!isEditingEmail && (
+                        <button
+                          onClick={handleEditEmail}
+                          className="flex items-center text-xs text-blue-600 hover:text-blue-800 transition-colors"
+                        >
+                          <Edit className="w-3 h-3 mr-1" />
+                          Change Email
+                        </button>
+                      )}
+                    </div>
+                    <div className="relative">
+                      <Input
+                        type="email"
+                        value={settings.email}
+                        onChange={isEditingEmail ? (e) => handleInputChange("email", e.target.value) : undefined}
+                        readOnly={!isEditingEmail}
+                        className={`${
+                          isEditingEmail 
+                            ? "border-blue-500 focus:ring-blue-500 pr-20" 
+                            : "bg-gray-50 cursor-not-allowed pr-10"
+                        }`}
+                        tabIndex={isEditingEmail ? 0 : -1}
+                      />
+                      {isEditingEmail ? (
+                        <div className="absolute right-2 top-1/2 transform -translate-y-1/2 flex gap-1">
+                          <button
+                            onClick={handleSaveEmail}
+                            className="p-1.5 bg-green-600 text-white rounded hover:bg-green-700 transition-colors"
+                            title="Save"
+                          >
+                            <Save className="w-3 h-3" />
+                          </button>
+                          <button
+                            onClick={handleCancelEmailEdit}
+                            className="p-1.5 bg-gray-400 text-white rounded hover:bg-gray-500 transition-colors"
+                            title="Cancel"
+                          >
+                            <X className="w-3 h-3" />
+                          </button>
+                        </div>
+                      ) : (
+                        <div className="absolute right-3 top-1/2 transform -translate-y-1/2">
+                          <Lock className="w-4 h-4 text-gray-400" />
+                        </div>
+                      )}
+                    </div>
+                    {!isEditingEmail && (
+                      <p className="text-xs text-gray-500 mt-1">
+                        <Lock className="w-3 h-3 inline mr-1" />
+                        This is your account email. Click "Change Email" to update.
+                      </p>
+                    )}
                   </div>
                 </div>
 

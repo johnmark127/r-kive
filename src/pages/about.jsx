@@ -205,23 +205,23 @@ function About() {
                     <div className="row">
                         <div className="col-lg-4 col-md-6">
                             <div className="team-member">
-                                <img src="/assets/images/team/member1.jpg" alt="Team Member" />
-                                <h4>Dr. John Doe</h4>
-                                <p>Project Director</p>
+                                <img src="/assets/images/team/Jimuel.jpg" alt="Team Leader" />
+                                <h4>Jimuel Torres</h4>
+                                <p>Leader</p>
                             </div>
                         </div>
                         <div className="col-lg-4 col-md-6">
                             <div className="team-member">
-                                <img src="/assets/images/team/member2.jpg" alt="Team Member" />
-                                <h4>Jane Smith</h4>
-                                <p>Technical Lead</p>
+                                <img src="/assets/images/team/Salvatierra.jpg" alt="Programmer" />
+                                <h4>John Mark Salvatierra</h4>
+                                <p>Programmer</p>
                             </div>
                         </div>
                         <div className="col-lg-4 col-md-6">
                             <div className="team-member">
-                                <img src="/assets/images/team/member3.jpg" alt="Team Member" />
-                                <h4>Mike Johnson</h4>
-                                <p>Content Manager</p>
+                                <img src="/assets/images/team/Salvatierra.jpg" alt="Adviser" />
+                                <h4>Marites Escultor</h4>
+                                <p>Adviser</p>
                             </div>
                         </div>
                     </div>
