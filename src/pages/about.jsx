@@ -219,7 +219,7 @@ function About() {
                         </div>
                         <div className="col-lg-4 col-md-6">
                             <div className="team-member">
-                                <img src="/assets/images/team/Salvatierra.jpg" alt="Adviser" />
+                                <img src="/assets/images/team/Marites.jpg" alt="Adviser" />
                                 <h4>Marites Escultor</h4>
                                 <p>Adviser</p>
                             </div>
