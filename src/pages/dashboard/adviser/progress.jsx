@@ -27,6 +27,7 @@ import {
   Send
 } from "lucide-react"
 import { supabase } from "../../../supabase/client"
+import AdviserPDFAnnotator from "../../../components/AdviserPDFAnnotator"
 
 const ProgressMonitoring = () => {
   // Adviser workflow modal states (for defense status)
@@ -50,6 +51,8 @@ const ProgressMonitoring = () => {
   const [showChapterFeedbackModal, setShowChapterFeedbackModal] = useState(false)
   const [chapterFeedbackText, setChapterFeedbackText] = useState("")
   const [selectedProject, setSelectedProject] = useState(null)
+  const [showPDFAnnotator, setShowPDFAnnotator] = useState(false)
+  const [pdfFileUrl, setPdfFileUrl] = useState(null)
 
   // Get current user
   useEffect(() => {
@@ -151,7 +154,7 @@ const ProgressMonitoring = () => {
       if (groupIds.length > 0) {
           const { data, error } = await supabase
             .from('research_projects')
-            .select(`*, pre_oral_defense_status`)
+            .select('*')
             .in('group_id', groupIds)
           projectsData = data || []
           projectsError = error
@@ -398,21 +401,16 @@ const ProgressMonitoring = () => {
     setShowDetailsModal(true)
     
     try {
-      // Debug: log group ID
-      console.log('handleViewDetails: group.id =', group.id)
-
       // Only fetch proposals and projects by group_id
       const { data: detailedProposals } = await supabase
         .from('research_proposals')
         .select('*')
         .eq('group_id', group.id)
-      console.log('Fetched proposals:', detailedProposals)
 
       const { data: detailedProjects } = await supabase
         .from('research_projects')
         .select('*')
         .eq('group_id', group.id)
-      console.log('Fetched projects:', detailedProjects)
 
       setGroupDetails({
         ...group,
@@ -450,10 +448,72 @@ const ProgressMonitoring = () => {
   }
 
   // Handle viewing chapter content
-  const handleViewChapter = (chapter, project) => {
+  const handleViewChapter = async (chapter, project) => {
     setSelectedChapter(chapter)
     setSelectedProject(project)
-    setShowChapterModal(true)
+    
+    // Check if there's a PDF file uploaded for this chapter
+    // Try multiple sources: chapter object directly, or project object
+    let fileUrl = chapter.file_url || project[`chapter_${chapter.num}_file_url`]
+    const fileType = chapter.file_type || project[`chapter_${chapter.num}_file_type`]
+    const filename = chapter.filename
+    
+    // If no file_url but we have a PDF filename, try to get it from storage
+    if (!fileUrl && filename && (filename.toLowerCase().endsWith('.pdf') || fileType === 'application/pdf')) {
+      // Try to construct storage path or fetch from storage
+      try {
+        // Look for the file in storage using the project ID and chapter number
+        const storagePath = `chapters/project_${project.id}/`
+        const { data: files, error } = await supabase.storage
+          .from('research-files')
+          .list(storagePath)
+        
+        if (!error && files && files.length > 0) {
+          // Find the most recent file for this chapter
+          const chapterFiles = files.filter(file => 
+            file.name.includes(`chapter_${chapter.num}`) && 
+            file.name.toLowerCase().endsWith('.pdf')
+          )
+          
+          if (chapterFiles.length > 0) {
+            // Sort by created time and get the most recent
+            chapterFiles.sort((a, b) => new Date(b.created_at) - new Date(a.created_at))
+            const latestFile = chapterFiles[0]
+            
+            // Get the public URL
+            const { data: urlData } = supabase.storage
+              .from('research-files')
+              .getPublicUrl(`${storagePath}${latestFile.name}`)
+            
+            fileUrl = urlData?.publicUrl
+            console.log('Found PDF in storage:', fileUrl)
+          }
+        }
+      } catch (err) {
+        console.error('Error fetching file from storage:', err)
+      }
+    }
+    
+    console.log('Chapter view:', { 
+      chapterNum: chapter.num, 
+      fileUrl, 
+      fileType,
+      filename 
+    })
+    
+    // If PDF file exists or filename indicates PDF, show PDF annotator
+    if (fileUrl && (fileType === 'application/pdf' || fileUrl.toLowerCase().endsWith('.pdf') || (filename && filename.toLowerCase().endsWith('.pdf')))) {
+      console.log('Opening PDF annotator')
+      setPdfFileUrl(fileUrl)
+      setShowPDFAnnotator(true)
+    } else if (filename && filename.toLowerCase().endsWith('.pdf')) {
+      // PDF filename exists but no URL - show error or fallback
+      alert('PDF file detected but URL not found. The file may need to be re-uploaded after database migration.')
+      setShowChapterModal(true)
+    } else {
+      console.log('Opening text modal')
+      setShowChapterModal(true)
+    }
   }
 
   // Handle downloading chapter file
@@ -925,11 +985,11 @@ const ProgressMonitoring = () => {
                             'Conclusion and Recommendation'
                           ]
                           const chapters = [
-                            { num: 1, title: chapterTitles[0], completed: project.chapter_1_completed, status: project.chapter_1_status, filename: project.chapter_1_file_name, feedback: project.chapter_1_feedback, content: project.chapter_1_content, submitted_at: project.chapter_1_submitted_at, hasSubmission: !!(project.chapter_1_file_name || project.chapter_1_content) },
-                            { num: 2, title: chapterTitles[1], completed: project.chapter_2_completed, status: project.chapter_2_status, filename: project.chapter_2_file_name, feedback: project.chapter_2_feedback, content: project.chapter_2_content, submitted_at: project.chapter_2_submitted_at, hasSubmission: !!(project.chapter_2_file_name || project.chapter_2_content) },
-                            { num: 3, title: chapterTitles[2], completed: project.chapter_3_completed, status: project.chapter_3_status, filename: project.chapter_3_file_name, feedback: project.chapter_3_feedback, content: project.chapter_3_content, submitted_at: project.chapter_3_submitted_at, hasSubmission: !!(project.chapter_3_file_name || project.chapter_3_content) },
-                            { num: 4, title: chapterTitles[3], completed: project.chapter_4_completed, status: project.chapter_4_status, filename: project.chapter_4_file_name, feedback: project.chapter_4_feedback, content: project.chapter_4_content, submitted_at: project.chapter_4_submitted_at, hasSubmission: !!(project.chapter_4_file_name || project.chapter_4_content) },
-                            { num: 5, title: chapterTitles[4], completed: project.chapter_5_completed, status: project.chapter_5_status, filename: project.chapter_5_file_name, feedback: project.chapter_5_feedback, content: project.chapter_5_content, submitted_at: project.chapter_5_submitted_at, hasSubmission: !!(project.chapter_5_file_name || project.chapter_5_content) }
+                            { num: 1, title: chapterTitles[0], completed: project.chapter_1_completed, status: project.chapter_1_status, filename: project.chapter_1_file_name, feedback: project.chapter_1_feedback, content: project.chapter_1_content, submitted_at: project.chapter_1_submitted_at, hasSubmission: !!(project.chapter_1_file_name || project.chapter_1_content), file_url: project.chapter_1_file_url, file_type: project.chapter_1_file_type },
+                            { num: 2, title: chapterTitles[1], completed: project.chapter_2_completed, status: project.chapter_2_status, filename: project.chapter_2_file_name, feedback: project.chapter_2_feedback, content: project.chapter_2_content, submitted_at: project.chapter_2_submitted_at, hasSubmission: !!(project.chapter_2_file_name || project.chapter_2_content), file_url: project.chapter_2_file_url, file_type: project.chapter_2_file_type },
+                            { num: 3, title: chapterTitles[2], completed: project.chapter_3_completed, status: project.chapter_3_status, filename: project.chapter_3_file_name, feedback: project.chapter_3_feedback, content: project.chapter_3_content, submitted_at: project.chapter_3_submitted_at, hasSubmission: !!(project.chapter_3_file_name || project.chapter_3_content), file_url: project.chapter_3_file_url, file_type: project.chapter_3_file_type },
+                            { num: 4, title: chapterTitles[3], completed: project.chapter_4_completed, status: project.chapter_4_status, filename: project.chapter_4_file_name, feedback: project.chapter_4_feedback, content: project.chapter_4_content, submitted_at: project.chapter_4_submitted_at, hasSubmission: !!(project.chapter_4_file_name || project.chapter_4_content), file_url: project.chapter_4_file_url, file_type: project.chapter_4_file_type },
+                            { num: 5, title: chapterTitles[4], completed: project.chapter_5_completed, status: project.chapter_5_status, filename: project.chapter_5_file_name, feedback: project.chapter_5_feedback, content: project.chapter_5_content, submitted_at: project.chapter_5_submitted_at, hasSubmission: !!(project.chapter_5_file_name || project.chapter_5_content), file_url: project.chapter_5_file_url, file_type: project.chapter_5_file_type }
                           ]
 
                           // ...existing code...
@@ -1342,6 +1402,23 @@ const ProgressMonitoring = () => {
             </div>
           </div>
         </div>
+      )}
+
+      {/* PDF Annotator Modal */}
+      {showPDFAnnotator && pdfFileUrl && selectedChapter && selectedProject && currentUser && (
+        <AdviserPDFAnnotator
+          fileUrl={pdfFileUrl}
+          fileName={selectedChapter.filename || `Chapter ${selectedChapter.num}`}
+          projectId={selectedProject.id}
+          chapterNumber={selectedChapter.num}
+          adviserId={currentUser.uid}
+          onClose={() => {
+            setShowPDFAnnotator(false)
+            setPdfFileUrl(null)
+            setSelectedChapter(null)
+            setSelectedProject(null)
+          }}
+        />
       )}
     </div>
   )

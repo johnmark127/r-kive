@@ -27,8 +27,10 @@ import {
   X,
   FileText,
   MessageSquare,
+  Highlighter,
 } from "lucide-react"
 import { supabase } from "../../../supabase/client"
+import StudentPDFViewer from "../../../components/StudentPDFViewer"
 
 export default function GroupManagement() {
   // State for all projects
@@ -38,6 +40,12 @@ export default function GroupManagement() {
   const [selectedProject, setSelectedProject] = useState(null);
   const [loadingDetails, setLoadingDetails] = useState(false);
   const [projectDetails, setProjectDetails] = useState(null);
+  
+  // PDF Viewer states
+  const [showPDFViewer, setShowPDFViewer] = useState(false);
+  const [pdfFileUrl, setPdfFileUrl] = useState(null);
+  const [pdfChapterNumber, setPdfChapterNumber] = useState(null);
+  const [pdfFileName, setPdfFileName] = useState(null);
   // Fetch all projects for superadmin view
   useEffect(() => {
     const fetchAllProjects = async () => {
@@ -80,6 +88,24 @@ export default function GroupManagement() {
       setLoadingDetails(false);
     }
   };
+
+  // Open PDF viewer for superadmin (read-only)
+  const openPDFViewer = (project, chapterNumber) => {
+    const fileUrl = project[`chapter_${chapterNumber}_file_url`];
+    const fileType = project[`chapter_${chapterNumber}_file_type`];
+    const fileName = project[`chapter_${chapterNumber}_file_name`];
+    
+    if (fileUrl && (fileType === 'application/pdf' || fileUrl.toLowerCase().endsWith('.pdf'))) {
+      setPdfFileUrl(fileUrl);
+      setPdfChapterNumber(chapterNumber);
+      setPdfFileName(fileName || `Chapter ${chapterNumber}`);
+      setShowDetailsModal(false); // Close details modal
+      setShowPDFViewer(true);
+    } else {
+      alert('No PDF file available for this chapter.');
+    }
+  };
+
   const [groups, setGroups] = useState([])
   const [users, setUsers] = useState([])
   const [loading, setLoading] = useState(true)
@@ -904,11 +930,19 @@ export default function GroupManagement() {
                                 <Badge className={`${completed ? 'bg-green-100 text-green-800' : status === 'pending_review' ? 'bg-yellow-100 text-yellow-800' : status === 'in_progress' ? 'bg-blue-100 text-blue-800' : 'bg-gray-100 text-gray-800'}`}>
                                   {status === 'pending_review' ? 'Pending Review' : completed ? 'Complete' : status === 'in_progress' ? 'In Progress' : 'Not Started'}
                                 </Badge>
-                                {/* View button for chapter content */}
-                                {(content && content.length > 0) && (
-                                  <Button size="sm" variant="outline" onClick={() => alert(content)}>
-                                    <Eye className="w-4 h-4 mr-1" />
-                                    View
+                                {/* View Annotations button for PDF chapters */}
+                                {projectDetails?.fullProject?.[`chapter_${num}_file_url`] && (
+                                  projectDetails?.fullProject?.[`chapter_${num}_file_type`] === 'application/pdf' ||
+                                  projectDetails?.fullProject?.[`chapter_${num}_file_url`]?.toLowerCase().endsWith('.pdf')
+                                ) && (
+                                  <Button 
+                                    size="sm" 
+                                    variant="outline" 
+                                    onClick={() => openPDFViewer(projectDetails.fullProject, num)}
+                                    className="text-purple-600 border-purple-200 hover:bg-purple-50"
+                                  >
+                                    <Highlighter className="w-4 h-4 mr-1" />
+                                    View Annotations
                                   </Button>
                                 )}
                               </div>
@@ -944,6 +978,22 @@ export default function GroupManagement() {
             </div>
           </div>
         </div>
+      )}
+
+      {/* PDF Viewer Modal - Superadmin view (read-only) */}
+      {showPDFViewer && pdfFileUrl && selectedProject && pdfChapterNumber && (
+        <StudentPDFViewer
+          fileUrl={pdfFileUrl}
+          fileName={pdfFileName}
+          projectId={selectedProject.id}
+          chapterNumber={pdfChapterNumber}
+          onClose={() => {
+            setShowPDFViewer(false);
+            setPdfFileUrl(null);
+            setPdfChapterNumber(null);
+            setPdfFileName(null);
+          }}
+        />
       )}
     </div>
   )

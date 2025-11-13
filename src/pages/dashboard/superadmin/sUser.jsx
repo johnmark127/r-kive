@@ -151,10 +151,61 @@ const UserManagement = () => {
     }
   }
 
-  // Groups functionality removed - simplified placeholder
+  // Assign adviser to group
   const assignAdviserToGroup = async (adviserId, groupId) => {
-    setGroupAssignError('Group functionality is not available - groups have been removed')
-    setTimeout(() => setGroupAssignError(''), 3000)
+    try {
+      console.log(`Assigning adviser ${adviserId} to group ${groupId}`)
+      
+      // Check if assignment already exists
+      const { data: existingAssignment, error: checkError } = await supabase
+        .from('adviser_group_assignments')
+        .select('*')
+        .eq('adviser_id', adviserId)
+        .eq('group_id', groupId)
+        .single()
+
+      if (checkError && checkError.code !== 'PGRST116') {
+        throw checkError
+      }
+
+      if (existingAssignment) {
+        console.log('Adviser already assigned to this group')
+        return
+      }
+
+      // Check if adviser already has 5 groups (maximum limit)
+      const { count: adviserGroupCount, error: countError } = await supabase
+        .from('adviser_group_assignments')
+        .select('*', { count: 'exact', head: true })
+        .eq('adviser_id', adviserId)
+
+      if (countError) {
+        throw new Error(`Failed to check adviser group count: ${countError.message}`)
+      }
+
+      if (adviserGroupCount >= 5) {
+        throw new Error(`This adviser already has the maximum of 5 groups assigned. Please remove one before adding another.`)
+      }
+
+      // Create new assignment
+      const { error: assignError } = await supabase
+        .from('adviser_group_assignments')
+        .insert([{
+          adviser_id: adviserId,
+          group_id: groupId,
+          assigned_by: JSON.parse(localStorage.getItem('user') || '{}').uid || null,
+          assigned_at: new Date().toISOString()
+        }])
+
+      if (assignError) {
+        throw new Error(`Failed to assign adviser: ${assignError.message}`)
+      }
+
+      console.log('Adviser successfully assigned to group')
+    } catch (error) {
+      console.error('Error assigning adviser to group:', error)
+      throw error
+    }
   }
 
   // Groups functionality removed - simplified placeholder
@@ -355,9 +406,12 @@ const UserManagement = () => {
 
       // If promoting to research proponent, create/assign a group
       if (!currentStatus) { // Becoming a research proponent
+        console.log(`Promoting ${userName} to research proponent...`)
         const groupId = await handleResearchProponentGroupAssignment(userId, userName)
+        console.log(`Group creation result: ${groupId}`)
         return groupId
       } else { // Removing research proponent status
+        console.log(`Removing research proponent status for ${userName}...`)
         await handleResearchProponentGroupRemoval(userId)
         return null
       }
@@ -378,6 +432,12 @@ const UserManagement = () => {
     setAdviserSelectionError('')
 
     try {
+      console.log('Starting adviser selection process...', {
+        userId: newProponentData.userId,
+        adviserId: selectedAdviser,
+        userName: newProponentData.userName
+      })
+
       // First, promote the student to research proponent
       const groupId = await updateResearchProponentStatus(
         newProponentData.userId, 
@@ -385,42 +445,139 @@ const UserManagement = () => {
         newProponentData.userName
       )
 
+      console.log('Promotion completed, group ID:', groupId)
+
       if (groupId) {
         // Then assign the selected adviser to the group
         await assignAdviserToGroup(selectedAdviser, groupId)
+        console.log('Adviser assigned successfully')
+      } else {
+        console.warn('No group ID returned, adviser assignment skipped')
       }
 
       // Refresh user data to update the UI
       await fetchUserData()
+      console.log('User data refreshed')
 
       // Close modal and show success
       setIsAdviserSelectionModalOpen(false)
       setNewProponentData(null)
       setSelectedAdviser('')
 
-      // You could add a success notification here
+      alert(`Successfully promoted ${newProponentData.userName} to Research Proponent and assigned adviser!`)
 
     } catch (error) {
       console.error('Error in adviser selection process:', error)
-      setAdviserSelectionError('Failed to assign adviser. Please try again.')
+      setAdviserSelectionError(`Failed to assign adviser: ${error.message}`)
     } finally {
       setIsAssigningAdviser(false)
     }
   }
 
-  // Simplified - no group assignment since groups are removed
+  // Create a group when promoting student to research proponent
   const handleResearchProponentGroupAssignment = async (userId, userName) => {
-    // Groups functionality removed - just return null
-    console.log(`Research proponent ${userName} created without group assignment`)
-    return null
+    try {
+      console.log(`Creating group for research proponent ${userName}`)
+      
+      // Generate a unique group name in case of duplicates
+      let groupName = `${userName}'s Research Group`
+      let attempt = 1
+      
+      // Check if group name already exists and make it unique
+      while (attempt <= 10) { // Limit attempts to prevent infinite loop
+        const { data: existingGroup, error: checkError } = await supabase
+          .from('student_groups')
+          .select('id')
+          .eq('group_name', groupName)
+          .single()
+
+        if (checkError && checkError.code === 'PGRST116') {
+          // No existing group found, name is unique
+          break
+        } else if (!checkError && existingGroup) {
+          // Group name exists, try a different one
+          attempt++
+          groupName = `${userName}'s Research Group (${attempt})`
+        } else {
+          // Other error occurred
+          console.error('Error checking group name:', checkError)
+          break
+        }
+      }
+      
+      // Create a new group for the research proponent
+      const groupData = {
+        group_name: groupName,
+        description: `Research group led by ${userName}`,
+        research_focus: 'To be determined based on research proposal',
+        max_members: 5,
+        is_active: true,
+        created_by: userId,
+        leader_id: userId // Set the student as the group leader
+        // created_at and updated_at will be set automatically by database defaults
+      }
+
+      const { data: groupResult, error: groupError } = await supabase
+        .from('student_groups')
+        .insert([groupData])
+        .select()
+        .single()
+
+      if (groupError) {
+        console.error('Error creating group:', groupError)
+        throw new Error(`Failed to create group: ${groupError.message}`)
+      }
+
+      console.log('Group created successfully:', groupResult)
+      return groupResult.id
+    } catch (error) {
+      console.error('Error in group creation:', error)
+      throw error
+    }
   }
 
   // Removed - no longer needed since groups are removed
 
-  // Simplified - no group removal needed since groups are removed
+  // Remove group when removing research proponent status
   const handleResearchProponentGroupRemoval = async (userId) => {
-    // Groups functionality removed - nothing to do
-    console.log(`Research proponent status removed for user ${userId} - no group cleanup needed`)
+    try {
+      console.log(`Removing group for user ${userId}`)
+      
+      // Find and deactivate the group created by this user
+      const { error: groupError } = await supabase
+        .from('student_groups')
+        .update({ is_active: false })
+        .eq('created_by', userId)
+
+      if (groupError) {
+        console.error('Error deactivating group:', groupError)
+        // Don't throw error, just log it as this is cleanup
+      }
+
+      // Also remove any adviser assignments for this user's groups
+      const { data: userGroups } = await supabase
+        .from('student_groups')
+        .select('id')
+        .eq('created_by', userId)
+
+      if (userGroups && userGroups.length > 0) {
+        const groupIds = userGroups.map(g => g.id)
+        const { error: assignmentError } = await supabase
+          .from('adviser_group_assignments')
+          .delete()
+          .in('group_id', groupIds)
+
+        if (assignmentError) {
+          console.error('Error removing adviser assignments:', assignmentError)
+          // Don't throw error, just log it as this is cleanup
+        }
+      }
+
+      console.log(`Group cleanup completed for user ${userId}`)
+    } catch (error) {
+      console.error('Error in group removal:', error)
+      // Don't throw error to prevent blocking the main operation
+    }
   }
 
   // Function to edit user

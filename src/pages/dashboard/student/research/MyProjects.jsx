@@ -12,9 +12,10 @@ import { Avatar, AvatarFallback } from "@/components/ui/avatar"
 import { 
   FlaskConical, Plus, Edit3, Eye, Calendar, Users, Clock, BookOpen, FileText, 
   Lightbulb, Presentation, BarChart3, TrendingUp, MessageSquare,
-  CheckCircle, XCircle, AlertTriangle, Download, Trash2
+  CheckCircle, XCircle, AlertTriangle, Download, Trash2, Highlighter
 } from "lucide-react"
 import { supabase } from "../../../../supabase/client"
+import StudentPDFViewer from "../../../../components/StudentPDFViewer"
 
 const ResearchHub = () => {
   const location = useLocation()
@@ -48,6 +49,11 @@ const ResearchHub = () => {
   // File upload states
   const [uploadingFile, setUploadingFile] = useState(false)
   const [uploadedFileName, setUploadedFileName] = useState("")
+  
+  // PDF Viewer states (for viewing with annotations)
+  const [showPDFViewer, setShowPDFViewer] = useState(false)
+  const [pdfFileUrl, setPdfFileUrl] = useState(null)
+  const [pdfChapterNumber, setPdfChapterNumber] = useState(null)
   
   // Image upload states
   const [uploadingImage, setUploadingImage] = useState(false)
@@ -93,7 +99,8 @@ const ResearchHub = () => {
     title: "",
     description: "",
     category: "",
-    research_topic: ""
+    research_topic: "",
+    documents: []
   })
   const [submittingProposal, setSubmittingProposal] = useState(false)
 
@@ -149,6 +156,46 @@ const ResearchHub = () => {
 
         if (error) {
           throw error
+        }
+
+        // Check for projects missing group_id and update them
+        const projectsNeedingGroupId = (data || []).filter(p => !p.group_id);
+        if (projectsNeedingGroupId.length > 0) {
+          console.log(`Found ${projectsNeedingGroupId.length} projects without group_id. Attempting to update...`);
+          
+          try {
+            // Fetch user's active group
+            const { data: groupData, error: groupError } = await supabase
+              .from('student_groups')
+              .select('id')
+              .eq('created_by', user.uid)
+              .eq('is_active', true)
+              .maybeSingle();
+            
+            if (!groupError && groupData) {
+              // Update all projects to have this group_id
+              const updatePromises = projectsNeedingGroupId.map(project =>
+                supabase
+                  .from('research_projects')
+                  .update({ group_id: groupData.id })
+                  .eq('id', project.id)
+              );
+              
+              await Promise.all(updatePromises);
+              console.log(`Updated ${projectsNeedingGroupId.length} projects with group_id:`, groupData.id);
+              
+              // Update local data
+              data.forEach(project => {
+                if (!project.group_id) {
+                  project.group_id = groupData.id;
+                }
+              });
+            } else {
+              console.warn('No active group found. Projects will remain without group_id.');
+            }
+          } catch (updateError) {
+            console.error('Error updating projects with group_id:', updateError);
+          }
         }
 
         // Enhance projects with chapter data
@@ -245,6 +292,27 @@ const ResearchHub = () => {
     try {
       setCreatingProject(true)
 
+      // Fetch student's active group by leader_id or created_by
+      let groupId = null;
+      try {
+        const { data: groupData, error: groupError } = await supabase
+          .from('student_groups')
+          .select('id')
+          .eq('created_by', user.uid)
+          .eq('is_active', true)
+          .maybeSingle();
+        
+        if (!groupError && groupData) {
+          groupId = groupData.id;
+          console.log('Found group ID:', groupId);
+        } else {
+          console.warn('No active group found for user. Projects without group_id will not be visible to advisers.');
+          alert('Warning: You are not part of an active group. This project will not be visible to your adviser until you join a group.');
+        }
+      } catch (e) {
+        console.warn('Could not fetch group:', e);
+      }
+
       const projectData = {
         title: newProjectForm.title.trim(),
         description: newProjectForm.description.trim(),
@@ -280,8 +348,11 @@ const ResearchHub = () => {
         chapter_5_feedback: '',
         chapter_5_status: 'Not started',
         created_at: new Date().toISOString(),
-        updated_at: new Date().toISOString()
+        updated_at: new Date().toISOString(),
+        ...(groupId && { group_id: groupId })
       }
+
+      console.log('Creating project with data:', { ...projectData, chapter_1_content: '[content hidden]' });
 
       const { data, error } = await supabase
         .from('research_projects')
@@ -291,6 +362,8 @@ const ResearchHub = () => {
       if (error) {
         throw error
       }
+
+      console.log('Project created successfully:', data);
 
       // Add new project to local state
       if (data && data[0]) {
@@ -330,6 +403,69 @@ const ResearchHub = () => {
       ...prev,
       [field]: value
     }))
+  }
+
+  const handleProposalFileUpload = (event) => {
+    const files = Array.from(event.target.files || [])
+    
+    // Validate file types and sizes
+    const validFiles = files.filter(file => {
+      const validTypes = ['application/pdf', 'application/msword', 'application/vnd.openxmlformats-officedocument.wordprocessingml.document', 'text/plain']
+      const maxSize = 10 * 1024 * 1024 // 10MB
+      
+      if (!validTypes.includes(file.type) && !file.name.match(/\.(pdf|doc|docx|txt)$/i)) {
+        alert(`${file.name} is not a supported file type. Please upload PDF, DOC, DOCX, or TXT files.`)
+        return false
+      }
+      
+      if (file.size > maxSize) {
+        alert(`${file.name} exceeds the 10MB size limit.`)
+        return false
+      }
+      
+      return true
+    })
+    
+    setProposalForm(prev => ({
+      ...prev,
+      documents: [...prev.documents, ...validFiles]
+    }))
+  }
+
+  const removeProposalFile = (index) => {
+    setProposalForm(prev => ({
+      ...prev,
+      documents: prev.documents.filter((_, i) => i !== index)
+    }))
+  }
+
+  const uploadProposalFileToSupabase = async (file, proposalId) => {
+    try {
+      const fileExt = file.name.split('.').pop()
+      const fileName = `${proposalId}-${Date.now()}.${fileExt}`
+      const filePath = `research-proposals/${fileName}`
+
+      const { data, error } = await supabase.storage
+        .from('research-files')
+        .upload(filePath, file, {
+          cacheControl: '3600',
+          upsert: false
+        })
+
+      if (error) {
+        throw error
+      }
+
+      return {
+        fileName: file.name,
+        filePath: data.path,
+        fileSize: file.size,
+        fileType: file.type || `application/${fileExt}`
+      }
+    } catch (error) {
+      console.error('Error uploading file:', error)
+      throw new Error(`Failed to upload ${file.name}: ${error.message}`)
+    }
   }
 
   const createNewProposal = async () => {
@@ -379,15 +515,43 @@ const ResearchHub = () => {
       const { data, error } = await supabase
         .from('research_proposals')
         .insert([proposalData])
-        .select();
+        .select()
+        .single();
 
       if (error) {
         throw error;
       }
 
+      // Upload files if any
+      if (proposalForm.documents.length > 0) {
+        try {
+          const uploadedFiles = []
+          
+          for (const file of proposalForm.documents) {
+            const fileData = await uploadProposalFileToSupabase(file, data.id)
+            uploadedFiles.push(fileData)
+          }
+
+          // Update the proposal with file information
+          const { error: updateError } = await supabase
+            .from('research_proposals')
+            .update({
+              documents: uploadedFiles
+            })
+            .eq('id', data.id)
+
+          if (updateError) {
+            console.error('Error updating proposal with files:', updateError)
+          }
+        } catch (fileError) {
+          console.error('Error uploading files:', fileError)
+          alert('Proposal created but some files failed to upload. You can upload them later.')
+        }
+      }
+
       // Add new proposal to local state
-      if (data && data[0]) {
-        setProposals(prev => [data[0], ...prev]);
+      if (data) {
+        setProposals(prev => [data, ...prev]);
       }
 
       // Reset form and close dialog
@@ -395,7 +559,8 @@ const ResearchHub = () => {
         title: "",
         description: "",
         category: "",
-        research_topic: ""
+        research_topic: "",
+        documents: []
       });
       setNewProposalDialogOpen(false);
 
@@ -550,6 +715,22 @@ const ResearchHub = () => {
     setChapterDialogOpen(true)
   }
 
+  // Open PDF viewer to see annotations
+  const openPDFWithAnnotations = (project, chapterNumber) => {
+    const fileUrl = project[`chapter_${chapterNumber}_file_url`]
+    const fileType = project[`chapter_${chapterNumber}_file_type`]
+    
+    if (fileUrl && (fileType === 'application/pdf' || fileUrl.toLowerCase().endsWith('.pdf'))) {
+      setSelectedProject(project)
+      setPdfChapterNumber(chapterNumber)
+      setPdfFileUrl(fileUrl)
+      setViewProjectDialogOpen(false) // Close the view project dialog
+      setShowPDFViewer(true)
+    } else {
+      alert('No PDF file available for this chapter. Upload a PDF to view annotations.')
+    }
+  }
+
   const handleFileUpload = async (event) => {
     const file = event.target.files[0]
     if (!file) return
@@ -557,30 +738,119 @@ const ResearchHub = () => {
     setUploadingFile(true)
     
     try {
-      // Read file content based on type
-      let content = ""
+      // Validate file size (max 10MB)
+      if (file.size > 10 * 1024 * 1024) {
+        alert('File size should be less than 10MB')
+        setUploadingFile(false)
+        return
+      }
+
+      // Upload file to Supabase storage
+      const timestamp = Date.now()
+      const fileExt = file.name.split('.').pop()
+      const sanitizedFileName = file.name.replace(/[^a-zA-Z0-9.-]/g, '_')
+      const storagePath = `chapters/project_${selectedProject.id}/chapter_${activeChapter}_${timestamp}.${fileExt}`
+      
+      console.log('Uploading file to storage:', storagePath)
+
+      const { data: uploadData, error: uploadError } = await supabase.storage
+        .from('research-files')
+        .upload(storagePath, file, {
+          cacheControl: '3600',
+          upsert: true
+        })
+
+      if (uploadError) {
+        console.error('Upload error:', uploadError)
+        throw new Error(`Upload failed: ${uploadError.message}`)
+      }
+
+      console.log('File uploaded successfully:', uploadData)
+
+      // Get the public URL
+      const { data: urlData } = supabase.storage
+        .from('research-files')
+        .getPublicUrl(storagePath)
+
+      if (!urlData?.publicUrl) {
+        throw new Error('Failed to get public URL for uploaded file')
+      }
+
+      const fileUrl = urlData.publicUrl
+      console.log('File URL:', fileUrl)
+
+      // Save file metadata to database immediately
+      const fileUrlKey = `chapter_${activeChapter}_file_url`
+      const fileTypeKey = `chapter_${activeChapter}_file_type`
+      const fileSizeKey = `chapter_${activeChapter}_file_size`
+      const fileUploadedAtKey = `chapter_${activeChapter}_file_uploaded_at`
+
+      console.log('Saving file metadata to database:', {
+        fileUrlKey,
+        fileUrl,
+        fileType: file.type,
+        projectId: selectedProject.id
+      })
+
+      const { data: updateData, error: updateError } = await supabase
+        .from('research_projects')
+        .update({
+          [fileUrlKey]: fileUrl,
+          [fileTypeKey]: file.type || 'application/octet-stream',
+          [fileSizeKey]: file.size,
+          [fileUploadedAtKey]: new Date().toISOString()
+        })
+        .eq('id', selectedProject.id)
+        .select()
+
+      if (updateError) {
+        console.error('Database update error:', updateError)
+        throw new Error(`Failed to save file info: ${updateError.message}`)
+      }
+
+      console.log('File metadata saved successfully:', updateData)
+      
+      // Update local project state
+      setSelectedProject(prev => ({
+        ...prev,
+        [fileUrlKey]: fileUrl,
+        [fileTypeKey]: file.type,
+        [fileSizeKey]: file.size,
+        [fileUploadedAtKey]: new Date().toISOString()
+      }))
+
+      // Read file content for preview (optional)
+      let content = chapterContent || ""
       
       if (file.type === "text/plain") {
         content = await file.text()
+        setChapterContent(content)
       } else if (file.type === "application/pdf") {
-        // For PDF, we'll just note that a PDF was uploaded
-        // In a real app, you'd use a PDF parser library
-        content = `[PDF File Uploaded: ${file.name}]\n\nPlease manually copy the content from your PDF file into this text area, or implement PDF parsing functionality.`
+        // For PDF, show a message that file is uploaded
+        if (!chapterContent.trim()) {
+          setChapterContent(`[PDF File Uploaded: ${file.name}]\n\nYour PDF has been uploaded successfully. Your adviser can view and annotate it.`)
+        }
       } else if (file.type.includes("document") || file.name.endsWith('.docx') || file.name.endsWith('.doc')) {
-        // For Word docs, we'll just note that a document was uploaded
-        // In a real app, you'd use a document parser library
-        content = `[Word Document Uploaded: ${file.name}]\n\nPlease manually copy the content from your document into this text area, or implement document parsing functionality.`
+        // For Word docs
+        if (!chapterContent.trim()) {
+          setChapterContent(`[Document Uploaded: ${file.name}]\n\nYour document has been uploaded successfully.`)
+        }
       } else {
         // Try to read as text for other file types
-        content = await file.text()
+        try {
+          content = await file.text()
+          setChapterContent(content)
+        } catch (e) {
+          console.log('Could not read file as text:', e)
+        }
       }
 
-      setChapterContent(content)
       setUploadedFileName(file.name)
+      alert('File uploaded successfully!')
       
     } catch (error) {
-      console.error('Error reading file:', error)
-      alert('Error reading file. Please try again or copy the content manually.')
+      console.error('Error uploading file:', error)
+      alert(`Error: ${error.message || 'Failed to upload file. Please try again.'}`)
     } finally {
       setUploadingFile(false)
     }
@@ -1399,6 +1669,21 @@ const ResearchHub = () => {
                                 </span>
                               </div>
                               <div className="flex items-center gap-2">
+                                {/* Show "View Annotations" button if PDF exists */}
+                                {project[`chapter_${chapterNum}_file_url`] && (
+                                  project[`chapter_${chapterNum}_file_type`] === 'application/pdf' || 
+                                  project[`chapter_${chapterNum}_file_url`].toLowerCase().endsWith('.pdf')
+                                ) && (
+                                  <Button
+                                    size="sm"
+                                    variant="outline"
+                                    onClick={() => openPDFWithAnnotations(project, chapterNum)}
+                                    className="text-xs px-3 py-1 text-purple-600 border-purple-200 hover:bg-purple-50"
+                                  >
+                                    <Highlighter className="w-3 h-3 mr-1" />
+                                    View Annotations
+                                  </Button>
+                                )}
                                 {/* Restrict edit button for chapters 4-5 unless defense status is Passed */}
                                 {!isRestricted ? (
                                   <Button
@@ -2117,6 +2402,23 @@ const ResearchHub = () => {
                             }>
                               {!viewProject[`chapter_${chapter.num}_file_name`] ? 'Not Started' : (viewProject[`chapter_${chapter.num}_status`] || 'Pending Review')}
                             </Badge>
+                            
+                            {/* Show "View Annotations" button if PDF exists */}
+                            {viewProject[`chapter_${chapter.num}_file_url`] && (
+                              viewProject[`chapter_${chapter.num}_file_type`] === 'application/pdf' || 
+                              viewProject[`chapter_${chapter.num}_file_url`].toLowerCase().endsWith('.pdf')
+                            ) && (
+                              <Button
+                                size="sm"
+                                variant="outline"
+                                onClick={() => openPDFWithAnnotations(viewProject, chapter.num)}
+                                className="text-xs px-3 py-1 text-purple-600 border-purple-200 hover:bg-purple-50"
+                              >
+                                <Highlighter className="w-3 h-3 mr-1" />
+                                View Annotations
+                              </Button>
+                            )}
+                            
                             <Button
                               size="sm"
                               variant="outline"
@@ -2485,7 +2787,7 @@ const ResearchHub = () => {
 
       {/* New Proposal Dialog */}
       <Dialog open={newProposalDialogOpen} onOpenChange={setNewProposalDialogOpen}>
-        <DialogContent className="max-w-2xl">
+        <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2">
               <Lightbulb className="h-5 w-5" />
@@ -2550,6 +2852,53 @@ const ResearchHub = () => {
               </div>
             </div>
 
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">
+                Supporting Documents (Optional)
+              </label>
+              <div className="border-2 border-dashed border-gray-300 rounded-lg p-4 text-center hover:border-gray-400 transition-colors">
+                <input
+                  id="proposal-documents"
+                  type="file"
+                  multiple
+                  accept=".pdf,.doc,.docx,.txt"
+                  onChange={handleProposalFileUpload}
+                  className="hidden"
+                />
+                <label
+                  htmlFor="proposal-documents"
+                  className="cursor-pointer"
+                >
+                  <FileText className="h-8 w-8 text-gray-400 mx-auto mb-2" />
+                  <p className="text-sm text-gray-600 hover:text-gray-800">
+                    Click to upload research documents, references, or supporting files
+                  </p>
+                  <p className="text-xs text-gray-500 mt-1">PDF, DOC, DOCX, TXT files up to 10MB each</p>
+                </label>
+                {proposalForm.documents.length > 0 && (
+                  <div className="mt-4 space-y-2">
+                    {proposalForm.documents.map((file, index) => (
+                      <div key={index} className="flex items-center justify-between bg-gray-50 p-2 rounded">
+                        <div className="flex items-center gap-2">
+                          <FileText className="h-4 w-4 text-blue-600" />
+                          <span className="text-sm text-gray-700">{file.name}</span>
+                          <span className="text-xs text-gray-500">({(file.size / 1024).toFixed(1)} KB)</span>
+                        </div>
+                        <Button
+                          size="sm"
+                          variant="ghost"
+                          onClick={() => removeProposalFile(index)}
+                          className="text-red-600 hover:text-red-700 hover:bg-red-50"
+                        >
+                          <Trash2 className="h-4 w-4" />
+                        </Button>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+            </div>
+
             <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4">
               <p className="text-sm text-yellow-800">
                 <strong>Important:</strong> Once submitted, your proposal will be reviewed by advisers. 
@@ -2566,7 +2915,8 @@ const ResearchHub = () => {
                     title: "",
                     description: "",
                     category: "",
-                    research_topic: ""
+                    research_topic: "",
+                    documents: []
                   })
                 }}
                 disabled={submittingProposal}
@@ -2584,6 +2934,21 @@ const ResearchHub = () => {
           </div>
         </DialogContent>
       </Dialog>
+
+      {/* Student PDF Viewer Modal - View with Annotations */}
+      {showPDFViewer && pdfFileUrl && selectedProject && pdfChapterNumber && (
+        <StudentPDFViewer
+          fileUrl={pdfFileUrl}
+          fileName={selectedProject[`chapter_${pdfChapterNumber}_file_name`] || `Chapter ${pdfChapterNumber}`}
+          projectId={selectedProject.id}
+          chapterNumber={pdfChapterNumber}
+          onClose={() => {
+            setShowPDFViewer(false)
+            setPdfFileUrl(null)
+            setPdfChapterNumber(null)
+          }}
+        />
+      )}
     </div>
   )
 }

@@ -322,10 +322,11 @@ export default function AnalyticsDashboard() {
         .select('*', { count: 'exact', head: true })
         .eq('role', 'adviser')
 
-      // Fetch total groups
+      // Fetch total groups (only active ones)
       const { count: groupsCount } = await supabase
         .from('student_groups')
         .select('*', { count: 'exact', head: true })
+        .eq('is_active', true)
 
       // Fetch total research papers
       const { count: papersCount } = await supabase
