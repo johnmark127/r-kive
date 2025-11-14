@@ -60,6 +60,15 @@ export default function AnalyticsDashboard() {
     Librarians: 0
   })
   const [groupsProgress, setGroupsProgress] = useState([])
+  const [allGroups, setAllGroups] = useState([]) // All groups unfiltered
+  const [filteredGroups, setFilteredGroups] = useState([]) // Filtered groups
+  const [groupFilter, setGroupFilter] = useState('all') // all, active, attention, completed
+  const [sortBy, setSortBy] = useState('progress') // progress, name, adviser
+  const [searchQuery, setSearchQuery] = useState('')
+  const [currentPage, setCurrentPage] = useState(1)
+  const [groupsPerPage] = useState(12)
+  const [selectedAdviser, setSelectedAdviser] = useState('') // For adviser dropdown
+  const [advisersList, setAdvisersList] = useState([]) // List of all advisers
   const [researchStages, setResearchStages] = useState({
     chapter1: 0,
     chapter2: 0,
@@ -76,6 +85,28 @@ export default function AnalyticsDashboard() {
     fetchResearchStages()
     fetchAdviserPerformance()
   }, [])
+
+  // Filter and sort groups when filter/sort/search changes
+  useEffect(() => {
+    let filtered = [...allGroups]
+
+    // Apply adviser filter
+    if (groupFilter !== 'all') {
+      filtered = filtered.filter(g => g.adviser === groupFilter)
+    }
+
+    setFilteredGroups(filtered)
+    setCurrentPage(1) // Reset to first page
+  }, [allGroups, groupFilter])
+
+  // Paginate groups
+  useEffect(() => {
+    const startIndex = (currentPage - 1) * groupsPerPage
+    const endIndex = startIndex + groupsPerPage
+    setGroupsProgress(filteredGroups.slice(startIndex, endIndex))
+  }, [filteredGroups, currentPage, groupsPerPage])
+
+  const totalPages = Math.ceil(filteredGroups.length / groupsPerPage)
 
   const fetchResearchStages = async () => {
     try {
@@ -146,47 +177,113 @@ export default function AnalyticsDashboard() {
 
   const fetchGroupsProgress = async () => {
     try {
-      // Fetch all active groups with their projects and adviser info
+      // Fetch ALL groups (remove limit to get all 45 or more groups)
       const { data: groupsData } = await supabase
         .from('student_groups')
         .select(`
-          id, group_name, research_focus,
+          id, 
+          group_name, 
+          research_focus,
+          is_active,
+          created_at,
           research_projects (
-            progress
+            id,
+            progress,
+            status,
+            chapter_1_completed,
+            chapter_2_completed,
+            chapter_3_completed,
+            chapter_4_completed,
+            chapter_5_completed,
+            updated_at
           )
         `)
-        .eq('is_active', true)
-        .limit(10)
+        .order('group_name', { ascending: true })
+
+      // Fetch adviser assignments
+      const { data: adviserAssignments } = await supabase
+        .from('adviser_group_assignments')
+        .select('group_id, adviser_id')
+
+      // Fetch adviser details
+      const adviserIds = [...new Set(adviserAssignments?.map(a => a.adviser_id) || [])]
+      let advisersMap = {}
+      if (adviserIds.length > 0) {
+        const { data: advisersData } = await supabase
+          .from('users')
+          .select('id, firstName, lastName, email')
+          .in('id', adviserIds)
+        
+        advisersMap = (advisersData || []).reduce((acc, adviser) => {
+          acc[adviser.id] = `${adviser.firstName || ''} ${adviser.lastName || ''}`.trim() || adviser.email
+          return acc
+        }, {})
+      }
 
       if (groupsData) {
         const processedGroups = groupsData.map(group => {
           const projects = group.research_projects || []
           let avgProgress = 0
+          let completedChapters = 0
+          let lastUpdated = group.created_at
+          
           if (projects.length > 0) {
             const totalProgress = projects.reduce((sum, project) => sum + (project.progress || 0), 0)
             avgProgress = Math.round(totalProgress / projects.length)
+            
+            // Count completed chapters from first project
+            const mainProject = projects[0]
+            completedChapters = [
+              mainProject.chapter_1_completed,
+              mainProject.chapter_2_completed,
+              mainProject.chapter_3_completed,
+              mainProject.chapter_4_completed,
+              mainProject.chapter_5_completed
+            ].filter(Boolean).length
+            
+            lastUpdated = mainProject.updated_at || group.created_at
           }
+          
+          // Find adviser for this group
+          const assignment = adviserAssignments?.find(a => a.group_id === group.id)
+          const adviserName = assignment ? (advisersMap[assignment.adviser_id] || 'Unassigned') : 'Unassigned'
+          
           return {
+            id: group.id,
             group: group.group_name,
             completion: avgProgress,
             total: projects.length,
             focus: group.research_focus,
-            adviser: 'Unassigned' // Remove users join, fallback to Unassigned
+            adviser: adviserName,
+            isActive: group.is_active,
+            completedChapters: completedChapters,
+            lastUpdated: lastUpdated,
+            status: avgProgress >= 90 ? 'Final' : 
+                   avgProgress >= 75 ? 'Pre-Defense' :
+                   avgProgress >= 60 ? 'Chapter 3' :
+                   avgProgress >= 35 ? 'Chapter 2' : 'Chapter 1'
           }
         })
 
-        setGroupsProgress(processedGroups)
+        setAllGroups(processedGroups)
+        setFilteredGroups(processedGroups)
+        setGroupsProgress(processedGroups.slice(0, 12)) // Show first 12 by default
+        
+        // Build list of unique advisers
+        const uniqueAdvisers = [...new Set(processedGroups.map(g => g.adviser))].sort()
+        setAdvisersList(uniqueAdvisers)
+        
+        // Set first adviser as selected by default
+        if (uniqueAdvisers.length > 0 && !selectedAdviser) {
+          setSelectedAdviser(uniqueAdvisers[0])
+        }
       }
     } catch (error) {
       console.error('Error fetching groups progress:', error)
-      // Fallback to static data
-      setGroupsProgress([
-        { group: "AI Research Team", completion: 85, total: 3 },
-        { group: "Web Development Squad", completion: 92, total: 2 },
-        { group: "Mobile App Innovators", completion: 78, total: 4 },
-        { group: "Data Science Collective", completion: 95, total: 2 },
-        { group: "Cybersecurity Unit", completion: 67, total: 1 }
-      ])
+      setAllGroups([])
+      setFilteredGroups([])
+      setGroupsProgress([])
+      setAdvisersList([])
     }
   }
 
@@ -222,7 +319,7 @@ export default function AnalyticsDashboard() {
         console.error('Error fetching group assignments:', assignmentsError)
       }
 
-      // Fetch research projects with feedback
+      // Fetch ALL research projects (not just those with feedback)
       const { data: researchProjects, error: projectsError } = await supabase
         .from('research_projects')
         .select(`
@@ -235,13 +332,29 @@ export default function AnalyticsDashboard() {
           chapter_3_feedback,
           chapter_4_feedback,
           chapter_5_feedback,
-          pre_oral_defense_feedback
+          pre_oral_defense_feedback,
+          chapter_1_completed,
+          chapter_2_completed,
+          chapter_3_completed,
+          chapter_4_completed,
+          chapter_5_completed
         `)
-        .or('chapter_1_feedback.neq.,chapter_2_feedback.neq.,chapter_3_feedback.neq.,chapter_4_feedback.neq.,chapter_5_feedback.neq.,pre_oral_defense_feedback.neq.')
 
       if (projectsError) {
         console.error('Error fetching research projects:', projectsError)
       }
+
+      // Fetch annotations for feedback count
+      const { data: annotationsData, error: annotationsError } = await supabase
+        .from('chapter_annotations')
+        .select('id, adviser_id, project_id')
+
+      if (annotationsError) {
+        console.warn('Error fetching annotations:', annotationsError)
+      }
+
+      console.log('Research projects fetched:', researchProjects?.length)
+      console.log('Annotations fetched:', annotationsData?.length)
 
       // Process adviser performance data
       const processedAdvisers = adviserUsers?.map(adviser => {
@@ -256,21 +369,38 @@ export default function AnalyticsDashboard() {
 
         // Get feedback count for this adviser by matching through group assignments
         const adviserGroupIds = adviserAssignments.map(assignment => assignment.group_id)
-        const adviserFeedback = researchProjects?.filter(project => 
+        const adviserProjects = researchProjects?.filter(project => 
           adviserGroupIds.includes(project.group_id)
         ) || []
 
-        // Count total feedback instances across all chapters
-        const totalFeedbackCount = adviserFeedback.reduce((count, project) => {
-          let projectFeedbackCount = 0
-          if (project.chapter_1_feedback && project.chapter_1_feedback.trim() !== '') projectFeedbackCount++
-          if (project.chapter_2_feedback && project.chapter_2_feedback.trim() !== '') projectFeedbackCount++
-          if (project.chapter_3_feedback && project.chapter_3_feedback.trim() !== '') projectFeedbackCount++
-          if (project.chapter_4_feedback && project.chapter_4_feedback.trim() !== '') projectFeedbackCount++
-          if (project.chapter_5_feedback && project.chapter_5_feedback.trim() !== '') projectFeedbackCount++
-          if (project.pre_oral_defense_feedback && project.pre_oral_defense_feedback.trim() !== '') projectFeedbackCount++
-          return count + projectFeedbackCount
-        }, 0)
+        // Count total feedback instances across all chapters AND annotations
+        let totalFeedbackCount = 0
+        
+        // Count text feedback
+        adviserProjects.forEach(project => {
+          if (project.chapter_1_feedback && project.chapter_1_feedback.trim() !== '') totalFeedbackCount++
+          if (project.chapter_2_feedback && project.chapter_2_feedback.trim() !== '') totalFeedbackCount++
+          if (project.chapter_3_feedback && project.chapter_3_feedback.trim() !== '') totalFeedbackCount++
+          if (project.chapter_4_feedback && project.chapter_4_feedback.trim() !== '') totalFeedbackCount++
+          if (project.chapter_5_feedback && project.chapter_5_feedback.trim() !== '') totalFeedbackCount++
+          if (project.pre_oral_defense_feedback && project.pre_oral_defense_feedback.trim() !== '') totalFeedbackCount++
+        })
+
+        // Count annotations
+        const adviserProjectIds = adviserProjects.map(p => p.id)
+        const adviserAnnotations = annotationsData?.filter(annotation => 
+          annotation.adviser_id === adviser.id && adviserProjectIds.includes(annotation.project_id)
+        ) || []
+        
+        totalFeedbackCount += adviserAnnotations.length
+
+        console.log(`${adviser.firstName} ${adviser.lastName}:`, {
+          groupIds: adviserGroupIds,
+          projects: adviserProjects.length,
+          textFeedback: totalFeedbackCount - adviserAnnotations.length,
+          annotations: adviserAnnotations.length,
+          total: totalFeedbackCount
+        })
 
         // Create handledGroups array with real data
         const handledGroups = activeGroups.map(assignment => {
@@ -505,93 +635,158 @@ export default function AnalyticsDashboard() {
 
       <Card>
         <CardHeader>
-          <CardTitle className="text-lg font-semibold">Progress of All Groups</CardTitle>
+          <div className="flex items-center justify-between">
+            <div>
+              <CardTitle className="text-lg font-semibold">All Groups Progress Overview</CardTitle>
+              <p className="text-sm text-gray-600 mt-1">
+                {allGroups.length} total groups across {advisersList.length} advisers
+              </p>
+            </div>
+            <div className="flex gap-2">
+              <select
+                value={groupFilter}
+                onChange={(e) => setGroupFilter(e.target.value)}
+                className="px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm"
+              >
+                <option value="all">All Advisers</option>
+                {advisersList.map((adviser, idx) => {
+                  const groupCount = allGroups.filter(g => g.adviser === adviser).length
+                  return (
+                    <option key={idx} value={adviser}>
+                      {adviser} ({groupCount} group{groupCount !== 1 ? 's' : ''})
+                    </option>
+                  )
+                })}
+              </select>
+              <Button 
+                onClick={fetchGroupsProgress}
+                variant="outline"
+                size="sm"
+              >
+                <Activity className="w-4 h-4 mr-2" />
+                Refresh
+              </Button>
+            </div>
+          </div>
         </CardHeader>
         <CardContent>
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-            {groupsProgress.map((group, index) => (
-              <Card key={index} className="hover:shadow-md transition-shadow duration-200">
-                <CardContent className="p-6">
-                  <div className="space-y-4">
-                    <div className="flex items-center justify-between">
-                      <h3 className="text-lg font-semibold text-gray-900">{group.group}</h3>
-                      <div className="text-right">
-                        <div className="text-2xl font-bold text-blue-600">{group.completion}%</div>
-                        <div className="text-xs text-gray-500">Progress</div>
+          {!loading && filteredGroups.length > 0 && (
+            <div className="space-y-2">
+              {filteredGroups.map((group, idx) => {
+                const barColor = 
+                  group.completion >= 75 ? 'from-green-400 to-green-600' :
+                  group.completion >= 50 ? 'from-yellow-400 to-yellow-600' :
+                  'from-red-400 to-red-600'
+                
+                return (
+                  <div key={idx} className="border rounded-lg p-3 hover:shadow-md transition-shadow bg-white">
+                    {/* Group Info */}
+                    <div className="flex items-center justify-between mb-2">
+                      <div className="flex items-center gap-2 flex-1 min-w-0">
+                        <div className={`w-8 h-8 rounded flex items-center justify-center flex-shrink-0 ${
+                          group.completion >= 75 ? 'bg-green-100' :
+                          group.completion >= 50 ? 'bg-yellow-100' :
+                          'bg-red-100'
+                        }`}>
+                          <Users className={`w-4 h-4 ${
+                            group.completion >= 75 ? 'text-green-600' :
+                            group.completion >= 50 ? 'text-yellow-600' :
+                            'text-red-600'
+                          }`} />
+                        </div>
+                        <div className="flex-1 min-w-0">
+                          <h4 className="font-semibold text-sm text-gray-900 truncate">{group.group}</h4>
+                          <div className="flex items-center gap-2 text-xs text-gray-600">
+                            <span className="flex items-center gap-1">
+                              <UserCheck className="w-3 h-3" />
+                              {group.adviser}
+                            </span>
+                            <span>•</span>
+                            <span>{group.status}</span>
+                          </div>
+                        </div>
+                      </div>
+                      <div className="text-right ml-3">
+                        <div className="text-xl font-bold text-blue-600">{group.completion}%</div>
                       </div>
                     </div>
-                    
-                    <Progress value={group.completion} className="h-3" />
-                    
-                    <div className="grid grid-cols-2 gap-4 text-sm">
-                      <div className="flex items-center space-x-2">
-                        <div className="w-2 h-2 bg-blue-500 rounded-full"></div>
-                        <span className="text-gray-600">Projects:</span>
-                        <span className="font-medium">{group.total}</span>
+
+                    {/* Progress Bar */}
+                    <div className="relative h-6 bg-gray-200 rounded overflow-hidden mb-2">
+                      {/* Grid lines */}
+                      <div className="absolute inset-0">
+                        {[25, 50, 75].map(percent => (
+                          <div 
+                            key={percent}
+                            className="absolute top-0 h-full border-l border-gray-300"
+                            style={{ left: `${percent}%` }}
+                          />
+                        ))}
                       </div>
-                      <div className="flex items-center space-x-2">
-                        <div className="w-2 h-2 bg-green-500 rounded-full"></div>
-                        <span className="text-gray-600">Status:</span>
-                        <span className="font-medium">
-                          {group.completion >= 90 ? 'Final' : 
-                           group.completion >= 75 ? 'Pre-Defense' :
-                           group.completion >= 60 ? 'Chapter 3' :
-                           group.completion >= 35 ? 'Chapter 2' : 'Chapter 1'}
+                      
+                      {/* Progress fill */}
+                      <div 
+                        className={`absolute top-0 left-0 h-full bg-gradient-to-r ${barColor} transition-all duration-500`}
+                        style={{ width: `${group.completion}%` }}
+                      />
+                      
+                      {/* Percentage labels */}
+                      <div className="absolute inset-0 flex justify-between items-center px-2 pointer-events-none">
+                        {[0, 25, 50, 75, 100].map(percent => (
+                          <span key={percent} className="text-xs text-gray-600 font-medium">
+                            {percent}
+                          </span>
+                        ))}
+                      </div>
+                    </div>
+
+                    {/* Chapter Progress - Compact */}
+                    <div className="flex items-center justify-between text-xs">
+                      <div className="flex items-center gap-1">
+                        {[1, 2, 3, 4, 5].map(chNum => (
+                          <div 
+                            key={chNum}
+                            className={`w-5 h-5 rounded flex items-center justify-center font-bold ${
+                              chNum <= group.completedChapters 
+                                ? 'bg-green-500 text-white' 
+                                : 'bg-gray-200 text-gray-500'
+                            }`}
+                            title={`Chapter ${chNum}`}
+                          >
+                            {chNum}
+                          </div>
+                        ))}
+                        <span className="text-gray-600 ml-1">
+                          ({group.completedChapters}/5)
                         </span>
                       </div>
-                    </div>
-                    
-                    {group.focus && (
-                      <div className="p-3 bg-gray-50 rounded-lg">
-                        <div className="text-xs font-medium text-gray-700 mb-1">Research Focus:</div>
-                        <div className="text-sm text-gray-600">{group.focus}</div>
-                      </div>
-                    )}
-                    
-                    <div className="flex items-center justify-between p-3 bg-blue-50 rounded-lg">
-                      <div className="flex items-center space-x-2">
-                        <UserCheck className="w-4 h-4 text-blue-600" />
-                        <span className="text-xs font-medium text-gray-700">Adviser:</span>
-                      </div>
-                      <span className="text-sm font-medium text-blue-700">{group.adviser}</span>
-                    </div>
-                    
-                    <div className="flex items-center justify-between pt-2 border-t border-gray-100">
-                      <div className="text-xs text-gray-500">
-                        Last updated: {new Date().toLocaleDateString()}
-                      </div>
-                      <div className={`px-2 py-1 rounded-full text-xs font-medium ${
-                        group.completion >= 75 ? 'bg-green-100 text-green-700' :
-                        group.completion >= 50 ? 'bg-yellow-100 text-yellow-700' :
-                        'bg-red-100 text-red-700'
-                      }`}>
-                        {group.completion >= 75 ? 'On Track' :
-                         group.completion >= 50 ? 'In Progress' : 'Needs Attention'}
+                      <div className="text-gray-500">
+                        {new Date(group.lastUpdated).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}
                       </div>
                     </div>
                   </div>
-                </CardContent>
-              </Card>
-            ))}
+                )
+              })}
+            </div>
+          )}
+
+          {!loading && filteredGroups.length === 0 && (
+            <div className="text-center py-12">
+              <Users className="w-12 h-12 mx-auto text-gray-400 mb-4" />
+              <h3 className="text-lg font-medium text-gray-900 mb-1">No groups found</h3>
+              <p className="text-gray-500">
+                {groupFilter !== 'all' ? `${groupFilter} has no assigned groups.` : 'Groups will appear here once they are created.'}
+              </p>
+            </div>
+          )}
             
-            {groupsProgress.length === 0 && !loading && (
-              <div className="col-span-full text-center py-12">
-                <div className="text-gray-400 mb-2">
-                  <Users className="w-12 h-12 mx-auto" />
-                </div>
-                <h3 className="text-lg font-medium text-gray-900 mb-1">No active groups found</h3>
-                <p className="text-gray-500">Groups will appear here once they are created and activated.</p>
-              </div>
-            )}
-            
-            {loading && (
-              <div className="col-span-full text-center py-12">
-                <Loader2 className="w-8 h-8 animate-spin mx-auto text-blue-600 mb-4" />
-                <h3 className="text-lg font-medium text-gray-900 mb-1">Loading groups...</h3>
-                <p className="text-gray-500">Please wait while we fetch the latest group data.</p>
-              </div>
-            )}
-          </div>
+          {loading && (
+            <div className="text-center py-12">
+              <Loader2 className="w-8 h-8 animate-spin mx-auto text-blue-600 mb-4" />
+              <h3 className="text-lg font-medium text-gray-900 mb-1">Loading groups...</h3>
+              <p className="text-gray-500">Please wait while we fetch the latest group data.</p>
+            </div>
+          )}
         </CardContent>
       </Card>
 

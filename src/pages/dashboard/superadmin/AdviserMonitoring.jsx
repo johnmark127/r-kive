@@ -7,7 +7,7 @@ import { Progress } from "@/components/ui/progress"
 import { Button } from "@/components/ui/button"
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog"
 import { Avatar, AvatarFallback } from "@/components/ui/avatar"
-import { Loader2, Clock, Calendar, MessageSquare, AlertTriangle, CheckCircle, XCircle, Target, TrendingDown, Star, Mail, Phone, BookOpen, GraduationCap, FileText, Users, Eye } from "lucide-react"
+import { Loader2, Clock, Calendar, MessageSquare, AlertTriangle, CheckCircle, XCircle, Target, TrendingDown, Star, Mail, Phone, BookOpen, GraduationCap, FileText, Users, Eye, Activity, Highlighter, TrendingUp, BarChart3 } from "lucide-react"
 import { supabase } from "@/supabase/client"
 
 const AdviserMonitoring = () => {
@@ -87,6 +87,28 @@ const AdviserMonitoring = () => {
         console.error('Error fetching research project feedback:', projectsError)
       }
 
+      // Fetch PDF annotations to track annotation activity
+      const { data: annotationsData, error: annotationsError } = await supabase
+        .from('chapter_annotations')
+        .select(`
+          id,
+          adviser_id,
+          project_id,
+          chapter_number,
+          created_at,
+          resolved
+        `)
+        .order('created_at', { ascending: false })
+
+      if (annotationsError) {
+        console.warn('Error fetching annotations:', annotationsError)
+      }
+
+      console.log('Fetched annotations:', annotationsData?.length || 0)
+      if (annotationsData && annotationsData.length > 0) {
+        console.log('Most recent annotation:', annotationsData[0])
+      }
+
       // Process the data to create adviser performance objects
       const processedAdvisers = adviserUsers?.map(adviser => {
         // Get assignments for this adviser
@@ -104,18 +126,75 @@ const AdviserMonitoring = () => {
           adviserGroupIds.includes(project.group_id)
         ) || []
 
+        // Get annotation count for this adviser
+        const adviserAnnotations = annotationsData?.filter(annotation => 
+          annotation.adviser_id === adviser.id
+        ) || []
+
+        // Count annotations by chapter
+        const annotationsByChapter = adviserAnnotations.reduce((acc, annotation) => {
+          const chapter = `chapter_${annotation.chapter_number}`
+          acc[chapter] = (acc[chapter] || 0) + 1
+          return acc
+        }, {})
+
         // Since we don't have student_group_members table, we'll estimate based on groups
         // Each group typically has 3-5 students, so we'll use groups * 4 as an estimate
         const studentsSupervised = activeGroups.length * 4
 
-        // Calculate time since account creation (since we don't have last_sign_in_at)
-        const accountCreated = new Date(adviser.created_at)
         const now = new Date()
-        const timeDiff = now - accountCreated
+
+        // Find the most recent activity across feedback and annotations
+        const allActivityDates = []
+        
+        // Collect feedback activity dates
+        adviserFeedback.forEach(project => {
+          if (project.updated_at) {
+            allActivityDates.push(new Date(project.updated_at))
+          }
+        })
+        
+        // Collect annotation activity dates
+        adviserAnnotations.forEach(annotation => {
+          if (annotation.created_at) {
+            allActivityDates.push(new Date(annotation.created_at))
+          }
+        })
+
+        // Find the most recent activity date
+        let lastActivityDate = null
+        if (allActivityDates.length > 0) {
+          lastActivityDate = new Date(Math.max(...allActivityDates))
+        } else {
+          // Fallback to account creation if no activities
+          lastActivityDate = new Date(adviser.created_at)
+        }
+
+        // Debug logging for this adviser
+        if (adviserAnnotations.length > 0 || adviserFeedback.length > 0) {
+          console.log(`Adviser ${adviser.email}:`, {
+            annotationsCount: adviserAnnotations.length,
+            feedbackCount: adviserFeedback.length,
+            totalActivityDates: allActivityDates.length,
+            lastActivityDate: lastActivityDate?.toISOString(),
+            mostRecentAnnotation: adviserAnnotations[0]?.created_at
+          })
+        }
+
+        // Calculate time since last activity
+        const timeDiff = now - lastActivityDate
         const daysAgo = Math.floor(timeDiff / (1000 * 60 * 60 * 24))
+        const hoursAgo = Math.floor(timeDiff / (1000 * 60 * 60))
+        const minutesAgo = Math.floor(timeDiff / (1000 * 60))
         
         let lastActiveText = "Unknown"
-        if (daysAgo === 0) {
+        if (minutesAgo < 1) {
+          lastActiveText = "Just now"
+        } else if (minutesAgo < 60) {
+          lastActiveText = `${minutesAgo} minute${minutesAgo > 1 ? 's' : ''} ago`
+        } else if (hoursAgo < 24) {
+          lastActiveText = `${hoursAgo} hour${hoursAgo > 1 ? 's' : ''} ago`
+        } else if (daysAgo === 0) {
           lastActiveText = "Today"
         } else if (daysAgo === 1) {
           lastActiveText = "Yesterday"
@@ -129,7 +208,7 @@ const AdviserMonitoring = () => {
           lastActiveText = `${monthsAgo} month${monthsAgo > 1 ? 's' : ''} ago`
         }
 
-        // Determine status based on recent feedback activity instead of sign-in time
+        // Determine status based on recent activity (feedback + annotations)
         let status = "inactive"
         
         // Count total feedback instances across all chapters
@@ -144,24 +223,16 @@ const AdviserMonitoring = () => {
           return count + projectFeedbackCount
         }, 0)
         
-        // Check for recent activity based on updated_at
-        const recentFeedback = adviserFeedback.filter(project => {
-          const updateDate = new Date(project.updated_at || project.created_at)
-          const feedbackDaysAgo = Math.floor((now - updateDate) / (1000 * 60 * 60 * 24))
-          return feedbackDaysAgo <= 7 // Updated within last week
-        })
-        
-        if (recentFeedback.length > 0 || totalFeedbackCount > 0) {
-          status = "active"
-        } else if (adviserFeedback.length > 0) {
-          const lastUpdateDate = new Date(Math.max(...adviserFeedback.map(f => new Date(f.updated_at || f.created_at))))
-          const daysSinceLastUpdate = Math.floor((now - lastUpdateDate) / (1000 * 60 * 60 * 24))
-          if (daysSinceLastUpdate <= 30) {
-            status = "warning"
-          }
+        // Check for recent activity based on the most recent date
+        if (daysAgo <= 7) {
+          status = "active" // Active within the last week
+        } else if (daysAgo <= 30) {
+          status = "warning" // Warning if between 1 week and 1 month
+        } else {
+          status = "inactive" // Inactive if more than 1 month
         }
 
-        // Create recent activities from feedback data
+        // Create recent activities from feedback data and annotations
         const recentActivities = []
         
         // Process each project's feedback to create individual activity entries
@@ -202,6 +273,35 @@ const AdviserMonitoring = () => {
             }
           })
         })
+
+        // Add PDF annotation activities
+        adviserAnnotations.forEach(annotation => {
+          const annotationDate = new Date(annotation.created_at)
+          const timeDiff = now - annotationDate
+          const hoursAgo = Math.floor(timeDiff / (1000 * 60 * 60))
+          const daysAgo = Math.floor(hoursAgo / 24)
+          
+          let timeText = ""
+          if (hoursAgo < 1) {
+            timeText = "Just now"
+          } else if (hoursAgo < 24) {
+            timeText = `${hoursAgo} hours ago`
+          } else {
+            timeText = `${daysAgo} days ago`
+          }
+
+          // Find the project title
+          const project = researchProjects?.find(p => p.id === annotation.project_id)
+          const projectTitle = project?.title || "Research Project"
+
+          recentActivities.push({
+            type: "annotation",
+            description: `Added PDF annotation on Chapter ${annotation.chapter_number}${annotation.resolved ? ' (Resolved)' : ''}`,
+            time: timeText,
+            group: projectTitle.substring(0, 30) + "...",
+            timestamp: annotationDate
+          })
+        })
         
         // Sort by most recent and take top 3
         recentActivities.sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp))
@@ -217,6 +317,21 @@ const AdviserMonitoring = () => {
           })
         }
 
+        // Calculate activity scores based on actual data
+        const last7Days = new Date(now - 7 * 24 * 60 * 60 * 1000)
+        const last30Days = new Date(now - 30 * 24 * 60 * 60 * 1000)
+
+        const weeklyActivities = recentActivities.filter(a => 
+          new Date(a.timestamp) >= last7Days
+        ).length
+        const monthlyActivities = recentActivities.filter(a => 
+          new Date(a.timestamp) >= last30Days
+        ).length
+
+        // Score out of 100 based on activity count (max 20 activities = 100)
+        const weeklyActivityScore = Math.min(100, (weeklyActivities / 20) * 100)
+        const monthlyActivityScore = Math.min(100, (monthlyActivities / 50) * 100)
+
         return {
           id: adviser.id,
           name: `${adviser.firstName || ''} ${adviser.lastName || ''}`.trim() || adviser.email,
@@ -231,13 +346,17 @@ const AdviserMonitoring = () => {
           status: status,
           rating: 4.0 + Math.random() * 1, // Placeholder - you'd get this from ratings table
           feedbackCount: totalFeedbackCount,
+          annotationCount: adviserAnnotations.length,
+          annotationsByChapter: annotationsByChapter,
+          resolvedAnnotations: adviserAnnotations.filter(a => a.resolved).length,
           meetingsScheduled: Math.floor(Math.random() * 30) + 10, // Placeholder
           missedMeetings: Math.floor(Math.random() * 5), // Placeholder  
           progressReviewsCompleted: Math.floor(Math.random() * 20) + 80, // Placeholder percentage
           studentsSupervised: studentsSupervised,
           researchAreasExpertise: ["Research Area 1", "Research Area 2"], // Placeholder
-          weeklyActivityScore: Math.floor(Math.random() * 40) + 60, // Placeholder
-          monthlyActivityScore: Math.floor(Math.random() * 40) + 60, // Placeholder
+          weeklyActivityScore: weeklyActivityScore,
+          monthlyActivityScore: monthlyActivityScore,
+          totalActivities: recentActivities.length,
           recentActivities: topRecentActivities
         }
       }) || []
@@ -285,9 +404,10 @@ const AdviserMonitoring = () => {
   const getActivityIcon = (type) => {
     switch (type) {
       case 'feedback': return <MessageSquare className="w-4 h-4 text-blue-600" />
+      case 'annotation': return <Highlighter className="w-4 h-4 text-purple-600" />
       case 'meeting': return <Calendar className="w-4 h-4 text-green-600" />
-      case 'review': return <FileText className="w-4 h-4 text-purple-600" />
-      case 'notification': return <AlertTriangle className="w-4 h-4 text-orange-600" />
+      case 'review': return <FileText className="w-4 h-4 text-orange-600" />
+      case 'notification': return <AlertTriangle className="w-4 h-4 text-yellow-600" />
       default: return <Activity className="w-4 h-4 text-gray-600" />
     }
   }
@@ -312,33 +432,45 @@ const AdviserMonitoring = () => {
             <h1 className="text-2xl font-bold text-gray-900 mb-1">Adviser Monitoring Dashboard</h1>
             <p className="text-gray-600">Real-time overview of adviser performance and activity</p>
           </div>
-          <Button 
-            onClick={fetchAdviserData}
-            variant="outline"
-            size="sm"
-          >
-            <Clock className="w-4 h-4 mr-2" />
-            Refresh Data
-          </Button>
+          <div className="flex gap-2">
+            <Button 
+              onClick={fetchAdviserData}
+              variant="default"
+              size="sm"
+              className="bg-blue-600 hover:bg-blue-700"
+            >
+              <Clock className="w-4 h-4 mr-2" />
+              Refresh Data
+            </Button>
+          </div>
         </div>
       </div>
 
       {/* Summary Stats */}
-      <div className="flex flex-row gap-6 mb-8">
-        <div className="flex-1 bg-white rounded-lg shadow-sm p-4 text-center">
+      <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-5 gap-4 mb-8">
+        <div className="bg-white rounded-lg shadow-sm p-4 text-center border border-gray-100">
+          <Users className="w-5 h-5 text-blue-600 mx-auto mb-2" />
           <div className="text-xs text-gray-500 mb-1">Total Advisers</div>
           <div className="text-2xl font-bold text-gray-900">{performanceMetrics.totalAdvisers}</div>
         </div>
-        <div className="flex-1 bg-white rounded-lg shadow-sm p-4 text-center">
+        <div className="bg-white rounded-lg shadow-sm p-4 text-center border border-gray-100">
+          <GraduationCap className="w-5 h-5 text-green-600 mx-auto mb-2" />
           <div className="text-xs text-gray-500 mb-1">Groups Assigned</div>
           <div className="text-2xl font-bold text-gray-900">{performanceMetrics.groupsAssigned}</div>
         </div>
-        <div className="flex-1 bg-white rounded-lg shadow-sm p-4 text-center">
+        <div className="bg-white rounded-lg shadow-sm p-4 text-center border border-gray-100">
+          <MessageSquare className="w-5 h-5 text-purple-600 mx-auto mb-2" />
           <div className="text-xs text-gray-500 mb-1">Feedback Given</div>
           <div className="text-2xl font-bold text-gray-900">{performanceMetrics.feedbackGiven}</div>
         </div>
-        <div className="flex-1 bg-white rounded-lg shadow-sm p-4 text-center">
-          <div className="text-xs text-gray-500 mb-1">Avg Response Time</div>
+        <div className="bg-white rounded-lg shadow-sm p-4 text-center border border-gray-100">
+          <Highlighter className="w-5 h-5 text-orange-600 mx-auto mb-2" />
+          <div className="text-xs text-gray-500 mb-1">Annotations</div>
+          <div className="text-2xl font-bold text-gray-900">{advisers.reduce((sum, a) => sum + (a.annotationCount || 0), 0)}</div>
+        </div>
+        <div className="bg-white rounded-lg shadow-sm p-4 text-center border border-gray-100">
+          <Clock className="w-5 h-5 text-red-600 mx-auto mb-2" />
+          <div className="text-xs text-gray-500 mb-1">Avg Response</div>
           <div className="text-2xl font-bold text-gray-900">{performanceMetrics.averageResponseTime}h</div>
         </div>
       </div>
@@ -383,6 +515,7 @@ const AdviserMonitoring = () => {
                       <div className="flex gap-4 mt-1">
                         <span className="text-xs text-gray-600">Groups: <span className="font-bold">{adviser.assignedGroups}</span></span>
                         <span className="text-xs text-gray-600">Feedback: <span className="font-bold">{adviser.feedbackCount}</span></span>
+                        <span className="text-xs text-gray-600">Annotations: <span className="font-bold">{adviser.annotationCount || 0}</span></span>
                         <span className="text-xs text-gray-600">Students: <span className="font-bold">{adviser.studentsSupervised}</span></span>
                       </div>
                     </div>
@@ -393,6 +526,14 @@ const AdviserMonitoring = () => {
                       {adviser.status.charAt(0).toUpperCase() + adviser.status.slice(1)}
                     </span>
                     <span className="text-xs text-gray-500">Last active: {adviser.lastActive}</span>
+                    {/* Activity Score Badge */}
+                    <div className="flex items-center gap-1 text-xs">
+                      <Activity className="w-3 h-3" />
+                      <span className={getActivityScoreColor(adviser.weeklyActivityScore)}>
+                        {Math.round(adviser.weeklyActivityScore)}%
+                      </span>
+                      <span className="text-gray-400">weekly</span>
+                    </div>
                     {/* Pending Review Badge */}
                     {hasPendingReview && (
                       <Badge variant="destructive">Pending Review</Badge>

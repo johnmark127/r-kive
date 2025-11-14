@@ -792,6 +792,40 @@ const ResearchHub = () => {
         projectId: selectedProject.id
       })
 
+      // Track deleted annotations count for user notification
+      let deletedAnnotationsCount = 0
+
+      // Delete old annotations for this chapter when new PDF is uploaded
+      // This prevents annotations from the old PDF appearing on the new PDF
+      if (file.type === 'application/pdf') {
+        console.log(`Deleting old annotations for project ${selectedProject.id}, chapter ${activeChapter}`)
+        
+        // First check if there are existing annotations
+        const { data: existingAnnotations } = await supabase
+          .from('chapter_annotations')
+          .select('id')
+          .eq('project_id', selectedProject.id)
+          .eq('chapter_number', activeChapter)
+        
+        deletedAnnotationsCount = existingAnnotations?.length || 0
+        
+        if (deletedAnnotationsCount > 0) {
+          const { error: deleteError } = await supabase
+            .from('chapter_annotations')
+            .delete()
+            .eq('project_id', selectedProject.id)
+            .eq('chapter_number', activeChapter)
+
+          if (deleteError) {
+            console.warn('Warning: Could not delete old annotations:', deleteError)
+            deletedAnnotationsCount = 0 // Reset if deletion failed
+            // Don't throw error, just warn - we still want to continue with upload
+          } else {
+            console.log(`${deletedAnnotationsCount} old annotation(s) deleted successfully`)
+          }
+        }
+      }
+
       const { data: updateData, error: updateError } = await supabase
         .from('research_projects')
         .update({
@@ -828,7 +862,7 @@ const ResearchHub = () => {
       } else if (file.type === "application/pdf") {
         // For PDF, show a message that file is uploaded
         if (!chapterContent.trim()) {
-          setChapterContent(`[PDF File Uploaded: ${file.name}]\n\nYour PDF has been uploaded successfully. Your adviser can view and annotate it.`)
+          setChapterContent(`[PDF File Uploaded: ${file.name}]\n\nYour PDF has been uploaded successfully. Previous annotations have been cleared. Your adviser can now review and annotate the new version.`)
         }
       } else if (file.type.includes("document") || file.name.endsWith('.docx') || file.name.endsWith('.doc')) {
         // For Word docs
@@ -846,7 +880,13 @@ const ResearchHub = () => {
       }
 
       setUploadedFileName(file.name)
-      alert('File uploaded successfully!')
+      
+      // Show appropriate success message
+      if (file.type === 'application/pdf' && deletedAnnotationsCount > 0) {
+        alert(`File uploaded successfully! ${deletedAnnotationsCount} previous annotation(s) have been cleared for the new PDF.`)
+      } else {
+        alert('File uploaded successfully!')
+      }
       
     } catch (error) {
       console.error('Error uploading file:', error)
