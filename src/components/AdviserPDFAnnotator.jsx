@@ -181,13 +181,43 @@ const AdviserPDFAnnotator = ({
       // Add to local state
       setAnnotations(prev => [...prev, data]);
       
+      // Automatically update chapter status and feedback to indicate annotations were added
+      const chapterStatusKey = `chapter_${chapterNumber}_status`;
+      const chapterFeedbackKey = `chapter_${chapterNumber}_feedback`;
+      
+      // Get current feedback to check if we need to update it
+      const { data: projectData } = await supabase
+        .from('research_projects')
+        .select(chapterFeedbackKey)
+        .eq('id', projectId)
+        .single();
+      
+      const currentFeedback = projectData?.[chapterFeedbackKey];
+      const updateData = { [chapterStatusKey]: 'Needs Revision' };
+      
+      // If no feedback exists yet, add a message about annotations
+      if (!currentFeedback || currentFeedback.trim() === '') {
+        updateData[chapterFeedbackKey] = 'Please review the PDF annotations for detailed feedback on your chapter.';
+      }
+      
+      const { error: statusError } = await supabase
+        .from('research_projects')
+        .update(updateData)
+        .eq('id', projectId);
+
+      if (statusError) {
+        console.warn('Could not update chapter status/feedback:', statusError);
+      } else {
+        console.log(`Chapter ${chapterNumber} status and feedback updated`);
+      }
+      
       // Clear selection
       setSelectedText(null);
       setShowCommentBox(false);
       setCommentText('');
       window.getSelection()?.removeAllRanges();
       
-      alert('Annotation saved successfully!');
+      alert('Annotation saved successfully! Chapter status updated to "Needs Revision".');
     } catch (err) {
       console.error('Error saving annotation:', err);
       alert('Failed to save annotation. Please try again.');

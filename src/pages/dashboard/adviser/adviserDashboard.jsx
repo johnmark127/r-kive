@@ -25,6 +25,42 @@ const AdviserDashboard = () => {
   const [analytics30, setAnalytics30] = useState([])
   const [analytics180, setAnalytics180] = useState([])
 
+  // Determine group status based on chapters completed within timeframe (same logic as progress monitoring)
+  const determineGroupStatus = (projects, groupCreatedAt) => {
+    if (projects.length === 0) return 'on-track'
+    
+    const now = new Date()
+    
+    // Get the project creation date for this group
+    const projectCreationDate = new Date(projects[0].created_at)
+    
+    // Calculate weeks since THIS group's project was created
+    const weeksSinceCreation = Math.floor((now - projectCreationDate) / (7 * 24 * 60 * 60 * 1000))
+    
+    // Count completed chapters for this group's projects
+    let completedChapters = 0
+    projects.forEach(project => {
+      if (project.chapter_1_completed) completedChapters++
+      if (project.chapter_2_completed) completedChapters++
+      if (project.chapter_3_completed) completedChapters++
+      if (project.chapter_4_completed) completedChapters++
+      if (project.chapter_5_completed) completedChapters++
+    })
+    
+    // Status based on 2-week timeframe from THIS group's project creation
+    if (weeksSinceCreation >= 2) {
+      // After 2 weeks, should have at least 1 chapter completed
+      if (completedChapters === 0) return 'behind'
+      if (completedChapters === 1) return 'on-track'
+      if (completedChapters >= 2) return 'ahead'
+    }
+    
+    // Before 2 weeks, status based on current progress
+    if (completedChapters >= 2) return 'ahead'
+    if (completedChapters === 1) return 'on-track'
+    return 'on-track' // Give them time if project is new
+  }
+
   // Get current user
   useEffect(() => {
     const getCurrentUser = async () => {
@@ -163,18 +199,26 @@ const AdviserDashboard = () => {
               totalProgress = Math.round(totalProgress / projectCount)
             }
 
-            // Find group leader
-            const leaderMember = group.student_group_members?.find(m => m.is_leader)
-            const leaderUser = usersData?.find(u => u.id === leaderMember?.student_id)
+            // Find group leader (created_by)
+            const leaderUser = usersData?.find(u => u.id === group.created_by)
+            
+            // Use project title if available, otherwise use group name
+            const displayTitle = groupProjects.length > 0 ? groupProjects[0].title : group.group_name
+            const displayDescription = groupProjects.length > 0 ? groupProjects[0].description : group.description
+            const displayCategory = groupProjects.length > 0 ? groupProjects[0].category : null
+            
+            // Determine status using the same logic as progress monitoring
+            const groupStatus = determineGroupStatus(groupProjects, group.created_at)
 
             groupProjectsData.push({
               id: group.id,
-              title: group.group_name,
+              title: displayTitle,
               progress: totalProgress,
               student: leaderUser ? `${leaderUser.firstName} ${leaderUser.lastName}` : 'No Leader',
               memberCount: group.student_group_members?.length || 0,
-              status: totalProgress >= 80 ? 'on_track' : totalProgress >= 50 ? 'needs_attention' : 'behind',
-              researchFocus: group.research_focus,
+              status: groupStatus,
+              researchFocus: displayDescription,
+              category: displayCategory,
               projects: groupProjects
             })
           })
@@ -393,11 +437,12 @@ const AdviserDashboard = () => {
 
   const getStatusBadge = (status) => {
     const statusConfig = {
-      approved: { variant: "default", className: "bg-green-100 text-green-800 hover:bg-green-100" },
-      pending: { variant: "secondary", className: "bg-yellow-100 text-yellow-800 hover:bg-yellow-100" },
-      under_review: { variant: "outline", className: "bg-blue-100 text-blue-800 hover:bg-blue-100" },
-      on_track: { variant: "default", className: "bg-green-100 text-green-800 hover:bg-green-100" },
-      needs_attention: { variant: "secondary", className: "bg-orange-100 text-orange-800 hover:bg-orange-100" },
+      approved: { variant: "default", className: "bg-green-100 text-green-800 hover:bg-green-100", label: "Approved" },
+      pending: { variant: "secondary", className: "bg-yellow-100 text-yellow-800 hover:bg-yellow-100", label: "Pending" },
+      under_review: { variant: "outline", className: "bg-blue-100 text-blue-800 hover:bg-blue-100", label: "Under Review" },
+      'on-track': { variant: "default", className: "bg-green-100 text-green-800 hover:bg-green-100", label: "On Track" },
+      behind: { variant: "secondary", className: "bg-red-100 text-red-800 hover:bg-red-100", label: "Behind" },
+      ahead: { variant: "default", className: "bg-blue-100 text-blue-800 hover:bg-blue-100", label: "Ahead" },
     }
 
     return statusConfig[status] || statusConfig.pending
@@ -463,6 +508,9 @@ const AdviserDashboard = () => {
                 <div className="flex-1 min-w-0">
                   <h3 className="font-semibold text-gray-900 truncate">{group.title}</h3>
                   <p className="text-sm text-gray-500 truncate">{group.student}</p>
+                  {group.category && (
+                    <span className="inline-block mt-1 text-xs px-2 py-1 bg-gray-100 text-gray-600 rounded">{group.category}</span>
+                  )}
                 </div>
                 <div className="flex-shrink-0">
                   <div className="relative w-16 h-16">
@@ -500,25 +548,15 @@ const AdviserDashboard = () => {
                 <div className="flex items-center justify-between text-sm">
                   <span className="text-gray-500">Status:</span>
                   <Badge
-                    variant={group.progress >= 80 ? "default" : group.progress >= 50 ? "secondary" : "destructive"}
-                    className={
-                      group.progress >= 80 
-                        ? "bg-green-100 text-green-800" 
-                        : group.progress >= 50 
-                          ? "bg-blue-100 text-blue-800"
-                          : "bg-red-100 text-red-800"
-                    }
+                    variant={getStatusBadge(group.status).variant}
+                    className={getStatusBadge(group.status).className}
                   >
-                    {group.progress >= 80 ? "On Track" : group.progress >= 50 ? "In Progress" : "Needs Attention"}
+                    {getStatusBadge(group.status).label}
                   </Badge>
                 </div>
-                <div className="flex items-center justify-between text-sm">
-                  <span className="text-gray-500">Members:</span>
-                  <span className="font-medium">{group.memberCount}</span>
-                </div>
                 {group.researchFocus && (
-                  <div className="text-xs text-gray-500 mt-2 truncate">
-                    <span className="font-medium">Focus:</span> {group.researchFocus}
+                  <div className="text-xs text-gray-500 mt-2">
+                    <span className="font-medium">Description:</span> {group.researchFocus}
                   </div>
                 )}
               </div>

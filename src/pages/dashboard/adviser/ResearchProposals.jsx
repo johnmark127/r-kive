@@ -27,6 +27,7 @@ import {
   BarChart3
 } from "lucide-react"
 import { supabase } from "../../../supabase/client"
+import StudentPDFViewer from "../../../components/StudentPDFViewer"
 
 const ReviewSubmissions = () => {
   const navigate = useNavigate()
@@ -40,6 +41,11 @@ const ReviewSubmissions = () => {
   const [reviewComment, setReviewComment] = useState("")
   const [reviewStatus, setReviewStatus] = useState("")
   const [submittingReview, setSubmittingReview] = useState(false)
+  
+  // PDF Viewer states
+  const [showPDFViewer, setShowPDFViewer] = useState(false)
+  const [pdfFileUrl, setPdfFileUrl] = useState(null)
+  const [pdfFileName, setPdfFileName] = useState(null)
 
   // Get current user
   useEffect(() => {
@@ -549,16 +555,7 @@ const ReviewSubmissions = () => {
                         Attached Files:
                       </p>
                       <div className="flex items-center gap-2">
-                        <span className="text-sm text-gray-600">{submission.file_name || 'Research Document'}</span>
-                        <Button
-                          variant="outline"
-                          size="sm"
-                          onClick={() => downloadFile(submission.file_path, submission.file_name)}
-                          className="ml-auto"
-                        >
-                          <Download className="h-4 w-4 mr-1" />
-                          Download
-                        </Button>
+                        <span className="text-sm text-gray-600 flex-1">{submission.file_name || 'Research Document'}</span>
                       </div>
                     </div>
                   )}
@@ -573,10 +570,27 @@ const ReviewSubmissions = () => {
                       <MessageSquare className="h-4 w-4 mr-1" />
                       {submission.adviser_comments ? 'Update Review' : 'Add Review'}
                     </Button>
-                    <Button variant="outline" size="sm">
-                      <Eye className="h-4 w-4 mr-1" />
-                      View Details
-                    </Button>
+                    {/* View PDF button if file is attached and is a PDF */}
+                    {submission.file_path && (submission.file_type === 'application/pdf' || submission.file_name?.toLowerCase().endsWith('.pdf')) && (
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => {
+                          const { data } = supabase.storage
+                            .from('research-files')
+                            .getPublicUrl(submission.file_path);
+                          if (data?.publicUrl) {
+                            setPdfFileUrl(data.publicUrl);
+                            setPdfFileName(submission.file_name || submission.title);
+                            setShowPDFViewer(true);
+                          }
+                        }}
+                        className="text-purple-600 border-purple-200 hover:bg-purple-50"
+                      >
+                        <Eye className="h-4 w-4 mr-1" />
+                        View PDF
+                      </Button>
+                    )}
                   </div>
                 </CardContent>
               </Card>
@@ -668,6 +682,21 @@ const ReviewSubmissions = () => {
             </div>
           </div>
         </div>
+      )}
+
+      {/* PDF Viewer Modal */}
+      {showPDFViewer && pdfFileUrl && (
+        <StudentPDFViewer
+          fileUrl={pdfFileUrl}
+          fileName={pdfFileName}
+          projectId={null}
+          chapterNumber={0}
+          onClose={() => {
+            setShowPDFViewer(false)
+            setPdfFileUrl(null)
+            setPdfFileName(null)
+          }}
+        />
       )}
     </div>
   )

@@ -12,7 +12,7 @@ import { Avatar, AvatarFallback } from "@/components/ui/avatar"
 import { 
   FlaskConical, Plus, Edit3, Eye, Calendar, Users, Clock, BookOpen, FileText, 
   Lightbulb, Presentation, BarChart3, TrendingUp, MessageSquare,
-  CheckCircle, XCircle, AlertTriangle, Download, Trash2, Highlighter
+  CheckCircle, XCircle, AlertTriangle, Download, Trash2, Highlighter, Lock
 } from "lucide-react"
 import { supabase } from "../../../../supabase/client"
 import StudentPDFViewer from "../../../../components/StudentPDFViewer"
@@ -95,6 +95,9 @@ const ResearchHub = () => {
   const [newProposalDialogOpen, setNewProposalDialogOpen] = useState(false)
   const [viewProposalDialogOpen, setViewProposalDialogOpen] = useState(false)
   const [viewProposal, setViewProposal] = useState(null)
+  const [showProposalPDFViewer, setShowProposalPDFViewer] = useState(false)
+  const [proposalPDFUrl, setProposalPDFUrl] = useState(null)
+  const [proposalPDFName, setProposalPDFName] = useState(null)
   const [proposalForm, setProposalForm] = useState({
     title: "",
     description: "",
@@ -525,27 +528,33 @@ const ResearchHub = () => {
       // Upload files if any
       if (proposalForm.documents.length > 0) {
         try {
-          const uploadedFiles = []
-          
-          for (const file of proposalForm.documents) {
-            const fileData = await uploadProposalFileToSupabase(file, data.id)
-            uploadedFiles.push(fileData)
-          }
+          // Upload first file (primary document)
+          const primaryFile = proposalForm.documents[0]
+          const fileData = await uploadProposalFileToSupabase(primaryFile, data.id)
 
-          // Update the proposal with file information
+          // Update the proposal with the primary file information
           const { error: updateError } = await supabase
             .from('research_proposals')
             .update({
-              documents: uploadedFiles
+              file_name: fileData.fileName,
+              file_path: fileData.filePath,
+              file_size: fileData.fileSize,
+              file_type: fileData.fileType
             })
             .eq('id', data.id)
 
           if (updateError) {
             console.error('Error updating proposal with files:', updateError)
           }
+          
+          // If there are multiple files, you could handle them here
+          // For now, we're only storing the first file
+          if (proposalForm.documents.length > 1) {
+            console.log('Note: Only the first file was uploaded. Additional files are not currently supported.')
+          }
         } catch (fileError) {
           console.error('Error uploading files:', fileError)
-          alert('Proposal created but some files failed to upload. You can upload them later.')
+          alert('Proposal created but file upload failed. You can try uploading it again later.')
         }
       }
 
@@ -585,6 +594,19 @@ const ResearchHub = () => {
   }
 
   const openViewProposal = (proposal) => {
+    // If proposal has a PDF file, open PDF viewer instead of details dialog
+    if (proposal.file_path && (proposal.file_type === 'application/pdf' || proposal.file_name?.toLowerCase().endsWith('.pdf'))) {
+      const { data } = supabase.storage
+        .from('research-files')
+        .getPublicUrl(proposal.file_path);
+      if (data?.publicUrl) {
+        setProposalPDFUrl(data.publicUrl);
+        setProposalPDFName(proposal.file_name || proposal.title);
+        setShowProposalPDFViewer(true);
+        return;
+      }
+    }
+    // Otherwise open details dialog
     setViewProposal(proposal)
     setViewProposalDialogOpen(true)
   }
@@ -797,33 +819,34 @@ const ResearchHub = () => {
 
       // Delete old annotations for this chapter when new PDF is uploaded
       // This prevents annotations from the old PDF appearing on the new PDF
-      if (file.type === 'application/pdf') {
-        console.log(`Deleting old annotations for project ${selectedProject.id}, chapter ${activeChapter}`)
+      const isPDF = file.type === 'application/pdf' || file.name.toLowerCase().endsWith('.pdf')
+      
+      if (isPDF) {
+        console.log(`=== ANNOTATION DELETION DEBUG ===`)
+        console.log(`Project ID: ${selectedProject.id}`)
+        console.log(`Chapter Number: ${activeChapter}`)
         
-        // First check if there are existing annotations
-        const { data: existingAnnotations } = await supabase
-          .from('chapter_annotations')
-          .select('id')
-          .eq('project_id', selectedProject.id)
-          .eq('chapter_number', activeChapter)
-        
-        deletedAnnotationsCount = existingAnnotations?.length || 0
-        
-        if (deletedAnnotationsCount > 0) {
-          const { error: deleteError } = await supabase
+        try {
+          // Delete annotations directly (requires RLS policy to allow students to delete)
+          const { data: deleteData, error: deleteError } = await supabase
             .from('chapter_annotations')
             .delete()
             .eq('project_id', selectedProject.id)
             .eq('chapter_number', activeChapter)
+            .select()
 
           if (deleteError) {
-            console.warn('Warning: Could not delete old annotations:', deleteError)
-            deletedAnnotationsCount = 0 // Reset if deletion failed
-            // Don't throw error, just warn - we still want to continue with upload
+            console.error('Error deleting annotations:', deleteError)
+            alert('Warning: Could not delete previous annotations. Make sure RLS policy allows deletion.')
           } else {
-            console.log(`${deletedAnnotationsCount} old annotation(s) deleted successfully`)
+            deletedAnnotationsCount = deleteData?.length || 0
+            console.log(`✓ Successfully deleted ${deletedAnnotationsCount} annotation(s)`)
           }
+        } catch (err) {
+          console.error('Exception deleting annotations:', err)
         }
+        
+        console.log(`=== END ANNOTATION DELETION DEBUG ===`)
       }
 
       const { data: updateData, error: updateError } = await supabase
@@ -882,7 +905,8 @@ const ResearchHub = () => {
       setUploadedFileName(file.name)
       
       // Show appropriate success message
-      if (file.type === 'application/pdf' && deletedAnnotationsCount > 0) {
+      const isPDFFile = file.type === 'application/pdf' || file.name.toLowerCase().endsWith('.pdf')
+      if (isPDFFile && deletedAnnotationsCount > 0) {
         alert(`File uploaded successfully! ${deletedAnnotationsCount} previous annotation(s) have been cleared for the new PDF.`)
       } else {
         alert('File uploaded successfully!')
@@ -2459,28 +2483,36 @@ const ResearchHub = () => {
                               </Button>
                             )}
                             
-                            <Button
-                              size="sm"
-                              variant="outline"
-                              onClick={() => openChapterEditor(viewProject, chapter.num)}
-                              className={`text-xs px-3 py-1 ${
-                                hasContent 
-                                  ? 'text-blue-600 border-blue-200 hover:bg-blue-50' 
-                                  : 'text-green-600 border-green-200 hover:bg-green-50'
-                              }`}
-                            >
-                              {hasContent ? (
-                                <>
-                                  <Edit3 className="w-3 h-3 mr-1" />
-                                  Edit Chapter
-                                </>
-                              ) : (
-                                <>
-                                  <Plus className="w-3 h-3 mr-1" />
-                                  Add Chapter
-                                </>
-                              )}
-                            </Button>
+                            {/* Restrict chapters 4-5 unless pre-oral defense is passed */}
+                            {(chapter.num === 4 || chapter.num === 5) && viewProject.pre_oral_defense_status !== 'Passed' ? (
+                              <Badge className="bg-gray-100 text-gray-600 border-gray-200 text-xs px-3 py-1">
+                                <Lock className="w-3 h-3 mr-1" />
+                                Pre-Oral Defense Required
+                              </Badge>
+                            ) : (
+                              <Button
+                                size="sm"
+                                variant="outline"
+                                onClick={() => openChapterEditor(viewProject, chapter.num)}
+                                className={`text-xs px-3 py-1 ${
+                                  hasContent 
+                                    ? 'text-blue-600 border-blue-200 hover:bg-blue-50' 
+                                    : 'text-green-600 border-green-200 hover:bg-green-50'
+                                }`}
+                              >
+                                {hasContent ? (
+                                  <>
+                                    <Edit3 className="w-3 h-3 mr-1" />
+                                    Edit Chapter
+                                  </>
+                                ) : (
+                                  <>
+                                    <Plus className="w-3 h-3 mr-1" />
+                                    Add Chapter
+                                  </>
+                                )}
+                              </Button>
+                            )}
                           </div>
                         </div>
                         
@@ -2978,6 +3010,7 @@ const ResearchHub = () => {
       {/* Student PDF Viewer Modal - View with Annotations */}
       {showPDFViewer && pdfFileUrl && selectedProject && pdfChapterNumber && (
         <StudentPDFViewer
+          key={pdfFileUrl} // Force remount when new PDF uploaded (fileUrl changes with timestamp)
           fileUrl={pdfFileUrl}
           fileName={selectedProject[`chapter_${pdfChapterNumber}_file_name`] || `Chapter ${pdfChapterNumber}`}
           projectId={selectedProject.id}
@@ -2986,6 +3019,21 @@ const ResearchHub = () => {
             setShowPDFViewer(false)
             setPdfFileUrl(null)
             setPdfChapterNumber(null)
+          }}
+        />
+      )}
+
+      {/* Proposal PDF Viewer Modal - View Proposal without Annotations */}
+      {showProposalPDFViewer && proposalPDFUrl && (
+        <StudentPDFViewer
+          fileUrl={proposalPDFUrl}
+          fileName={proposalPDFName || 'Research Proposal'}
+          projectId={null}
+          chapterNumber={0}
+          onClose={() => {
+            setShowProposalPDFViewer(false)
+            setProposalPDFUrl(null)
+            setProposalPDFName(null)
           }}
         />
       )}

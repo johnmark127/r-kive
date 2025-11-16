@@ -28,6 +28,7 @@ import {
 } from "lucide-react"
 import { supabase } from "../../../supabase/client"
 import AdviserPDFAnnotator from "../../../components/AdviserPDFAnnotator"
+import StudentPDFViewer from "../../../components/StudentPDFViewer"
 
 const ProgressMonitoring = () => {
   // Adviser workflow modal states (for defense status)
@@ -53,6 +54,23 @@ const ProgressMonitoring = () => {
   const [selectedProject, setSelectedProject] = useState(null)
   const [showPDFAnnotator, setShowPDFAnnotator] = useState(false)
   const [pdfFileUrl, setPdfFileUrl] = useState(null)
+  
+  // Proposal PDF viewer states
+  const [showProposalPDFViewer, setShowProposalPDFViewer] = useState(false)
+  const [proposalPDFUrl, setProposalPDFUrl] = useState(null)
+  const [proposalPDFName, setProposalPDFName] = useState(null)
+  
+  // Real-time update state
+  const [currentTime, setCurrentTime] = useState(new Date())
+
+  // Update current time every minute for real-time "ago" display
+  useEffect(() => {
+    const interval = setInterval(() => {
+      setCurrentTime(new Date())
+    }, 60000) // Update every minute
+
+    return () => clearInterval(interval)
+  }, [])
 
   // Get current user
   useEffect(() => {
@@ -198,12 +216,25 @@ const ProgressMonitoring = () => {
         const creator = usersData.find(user => user.id === group.created_by)
         const leader = creator
         // Determine status based on multiple factors
-        let status = determineGroupStatus(progress, groupProposals, [], groupProjects)
+        let status = determineGroupStatus(progress, groupProposals, [], groupProjects, group.created_at)
+
+        // Use project title as group name if project exists, otherwise use group name
+        const displayName = groupProjects.length > 0 ? groupProjects[0].title : group.group_name
+        const displayDescription = groupProjects.length > 0 ? groupProjects[0].description : group.description
+        
+        // Use the most recent update time from either group or projects
+        let mostRecentUpdate = group.updated_at || group.created_at
+        if (groupProjects.length > 0) {
+          const projectUpdates = groupProjects.map(p => new Date(p.updated_at || p.created_at))
+          const latestProjectUpdate = new Date(Math.max(...projectUpdates))
+          const groupUpdate = new Date(mostRecentUpdate)
+          mostRecentUpdate = latestProjectUpdate > groupUpdate ? latestProjectUpdate.toISOString() : mostRecentUpdate
+        }
 
         return {
           id: group.id,
-          name: group.group_name,
-          description: group.description,
+          name: displayName,
+          description: displayDescription,
           members: [leader ? {
             id: leader.id,
             name: `${leader.firstName || ''} ${leader.lastName || ''}`.trim() || leader.email,
@@ -213,8 +244,8 @@ const ProgressMonitoring = () => {
           leader: leader ? `${leader.firstName || ''} ${leader.lastName || ''}`.trim() || leader.email : 'Not assigned',
           completion: progress,
           status: status,
-          lastUpdate: formatLastUpdate(group.updated_at || group.created_at),
-          researchFocus: group.research_focus,
+          lastUpdate: formatLastUpdate(mostRecentUpdate),
+          researchFocus: groupProjects.length > 0 ? groupProjects[0].description : group.research_focus,
           memberCount: 1,
           proposals: groupProposals,
           memberProposals: [],
@@ -236,12 +267,15 @@ const ProgressMonitoring = () => {
   const formatLastUpdate = (dateString) => {
     if (!dateString) return 'Never'
     
-    const now = new Date()
+    const now = currentTime // Use state for real-time updates
     const updated = new Date(dateString)
-    const diffInHours = Math.floor((now - updated) / (1000 * 60 * 60))
+    const diffInMs = now - updated
+    const diffInMinutes = Math.floor(diffInMs / (1000 * 60))
+    const diffInHours = Math.floor(diffInMs / (1000 * 60 * 60))
     
-    if (diffInHours < 1) return 'Just now'
-    if (diffInHours < 24) return `${diffInHours} hours ago`
+    if (diffInMinutes < 1) return 'Just now'
+    if (diffInMinutes < 60) return `${diffInMinutes} minute${diffInMinutes === 1 ? '' : 's'} ago`
+    if (diffInHours < 24) return `${diffInHours} hour${diffInHours === 1 ? '' : 's'} ago`
     
     const diffInDays = Math.floor(diffInHours / 24)
     if (diffInDays === 1) return '1 day ago'
@@ -283,20 +317,40 @@ const ProgressMonitoring = () => {
     return Math.round(totalProjectProgress / projects.length)
   }
 
-  // Determine group status based only on chapter progress
-  const determineGroupStatus = (progress, groupProposals, memberProposals, projects) => {
+  // Determine group status based on chapters completed within timeframe
+  const determineGroupStatus = (progress, groupProposals, memberProposals, projects, groupCreatedAt) => {
+    if (projects.length === 0) return 'on-track'
+    
     const now = new Date()
-    const oneWeekAgo = new Date(now.getTime() - (7 * 24 * 60 * 60 * 1000))
-
-    // Check for recent activity only in projects/chapters
-    const hasRecentActivity = projects.some(p => 
-      new Date(p.updated_at || p.created_at) > oneWeekAgo
-    )
-
-    if (progress >= 80) return 'ahead'
-    if (progress >= 50 && hasRecentActivity) return 'on-track'
-    if (progress < 25 || !hasRecentActivity) return 'behind'
-    return 'on-track'
+    
+    // Get the project creation date for this group
+    const projectCreationDate = new Date(projects[0].created_at)
+    
+    // Calculate weeks since THIS group's project was created
+    const weeksSinceCreation = Math.floor((now - projectCreationDate) / (7 * 24 * 60 * 60 * 1000))
+    
+    // Count completed chapters for this group's projects
+    let completedChapters = 0
+    projects.forEach(project => {
+      if (project.chapter_1_completed) completedChapters++
+      if (project.chapter_2_completed) completedChapters++
+      if (project.chapter_3_completed) completedChapters++
+      if (project.chapter_4_completed) completedChapters++
+      if (project.chapter_5_completed) completedChapters++
+    })
+    
+    // Status based on 2-week timeframe from THIS group's project creation
+    if (weeksSinceCreation >= 2) {
+      // After 2 weeks, should have at least 1 chapter completed
+      if (completedChapters === 0) return 'behind'
+      if (completedChapters === 1) return 'on-track'
+      if (completedChapters >= 2) return 'ahead'
+    }
+    
+    // Before 2 weeks, status based on current progress
+    if (completedChapters >= 2) return 'ahead'
+    if (completedChapters === 1) return 'on-track'
+    return 'on-track' // Give them time if project is new
   }
 
   // Check for recent activity - only chapters/projects matter now
@@ -396,21 +450,37 @@ const ProgressMonitoring = () => {
 
   // Handle viewing group details
   const handleViewDetails = async (group) => {
+    console.log('View Details clicked for group:', group)
     setSelectedGroup(group)
     setLoadingDetails(true)
     setShowDetailsModal(true)
     
     try {
       // Only fetch proposals and projects by group_id
-      const { data: detailedProposals } = await supabase
+      console.log('Fetching proposals for group:', group.id)
+      const { data: detailedProposals, error: proposalsError } = await supabase
         .from('research_proposals')
         .select('*')
         .eq('group_id', group.id)
 
-      const { data: detailedProjects } = await supabase
+      if (proposalsError) {
+        console.error('Error fetching proposals:', proposalsError)
+      }
+
+      console.log('Fetching projects for group:', group.id)
+      const { data: detailedProjects, error: projectsError } = await supabase
         .from('research_projects')
         .select('*')
         .eq('group_id', group.id)
+
+      if (projectsError) {
+        console.error('Error fetching projects:', projectsError)
+      }
+
+      console.log('Setting group details:', {
+        proposals: detailedProposals?.length,
+        projects: detailedProjects?.length
+      })
 
       setGroupDetails({
         ...group,
@@ -614,10 +684,6 @@ const ProgressMonitoring = () => {
               <RefreshCw className={`w-4 h-4 mr-2 ${refreshing ? 'animate-spin' : ''}`} />
               Refresh
             </Button>
-            <Button variant="outline" size="sm">
-              <Calendar className="w-4 h-4 mr-2" />
-              View Calendar
-            </Button>
             <Button>
               <Download className="w-4 h-4 mr-2" />
               Export Report
@@ -737,10 +803,6 @@ const ProgressMonitoring = () => {
                       <p className="text-sm text-gray-600 mb-2">{group.description || group.researchFocus}</p>
                       <div className="flex items-center gap-4 text-sm text-gray-500">
                         <div className="flex items-center">
-                          <Users className="w-4 h-4 mr-1" />
-                          <span>{group.memberCount} members</span>
-                        </div>
-                        <div className="flex items-center">
                           <Clock className="w-4 h-4 mr-1" />
                           <span>Updated {group.lastUpdate}</span>
                         </div>
@@ -765,11 +827,11 @@ const ProgressMonitoring = () => {
                     <Progress value={group.completion} className="h-2" />
                   </div>
 
-                  {/* Research Focus Only */}
+                  {/* Description */}
                   <div className="mb-6">
-                    <h4 className="text-sm font-medium text-gray-900 mb-3">Research Focus</h4>
+                    <h4 className="text-sm font-medium text-gray-900 mb-3">Description</h4>
                     <p className="text-sm text-gray-600 leading-relaxed">
-                      {group.researchFocus || "No research focus specified"}
+                      {group.researchFocus || "No description specified"}
                     </p>
                   </div>
 
@@ -783,25 +845,6 @@ const ProgressMonitoring = () => {
                       <Eye className="w-4 h-4 mr-2" />
                       View Details
                     </Button>
-                    <Button 
-                      size="sm" 
-                      variant="outline"
-                      onClick={() => handleSendFeedback(group)}
-                    >
-                      <Send className="w-4 h-4 mr-2" />
-                      Send Feedback
-                    </Button>
-                    {group.status === "behind" && (
-                      <Button
-                        size="sm"
-                        variant="outline"
-                        className="text-red-600 border-red-200 hover:bg-red-50 bg-transparent"
-                        onClick={() => handleSendFeedback(group)}
-                      >
-                        <AlertTriangle className="w-4 h-4 mr-2" />
-                        Follow Up
-                      </Button>
-                    )}
                     {group.hasRecentActivity && (
                       <Badge variant="outline" className="bg-green-50 text-green-600 border-green-200">
                         <Activity className="w-3 h-3 mr-1" />
@@ -887,20 +930,6 @@ const ProgressMonitoring = () => {
                         </div>
                       </CardContent>
                     </Card>
-                    
-                    <Card>
-                      <CardContent className="p-4">
-                        <div className="flex items-center justify-between">
-                          <div>
-                            <p className="text-sm text-gray-600">Team Members</p>
-                            <p className="text-2xl font-bold">{groupDetails.memberCount}</p>
-                          </div>
-                          <div className="p-3 rounded-full bg-green-100 text-green-600">
-                            <Users className="w-5 h-5" />
-                          </div>
-                        </div>
-                      </CardContent>
-                    </Card>
                   </div>
 
                   {/* Research Proposals Section */}
@@ -922,6 +951,27 @@ const ProgressMonitoring = () => {
                                     <span>Category: {proposal.category || 'Not specified'}</span>
                                     <span>Submitted: {new Date(proposal.submitted_at).toLocaleDateString()}</span>
                                   </div>
+                                  {/* View PDF Button if file exists */}
+                                  {proposal.file_path && (proposal.file_type === 'application/pdf' || proposal.file_name?.toLowerCase().endsWith('.pdf')) && (
+                                    <Button
+                                      size="sm"
+                                      variant="outline"
+                                      onClick={() => {
+                                        const { data } = supabase.storage
+                                          .from('research-files')
+                                          .getPublicUrl(proposal.file_path);
+                                        if (data?.publicUrl) {
+                                          setProposalPDFUrl(data.publicUrl);
+                                          setProposalPDFName(proposal.file_name || proposal.title);
+                                          setShowProposalPDFViewer(true);
+                                        }
+                                      }}
+                                      className="mt-2 text-xs text-blue-600 border-blue-200 hover:bg-blue-50"
+                                    >
+                                      <FileText className="w-3 h-3 mr-1" />
+                                      View PDF Proposal
+                                    </Button>
+                                  )}
                                 </div>
                                 <Badge className={getStatusColor(proposal.status)}>
                                   {proposal.status}
@@ -1417,6 +1467,21 @@ const ProgressMonitoring = () => {
             setPdfFileUrl(null)
             setSelectedChapter(null)
             setSelectedProject(null)
+          }}
+        />
+      )}
+
+      {/* Proposal PDF Viewer Modal (Read-only, no annotations) */}
+      {showProposalPDFViewer && proposalPDFUrl && (
+        <StudentPDFViewer
+          fileUrl={proposalPDFUrl}
+          fileName={proposalPDFName}
+          projectId={null} // No project ID for proposals
+          chapterNumber={0} // Not a chapter
+          onClose={() => {
+            setShowProposalPDFViewer(false)
+            setProposalPDFUrl(null)
+            setProposalPDFName(null)
           }}
         />
       )}

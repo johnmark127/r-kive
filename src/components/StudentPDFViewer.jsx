@@ -51,11 +51,17 @@ const StudentPDFViewer = ({
     if (projectId && chapterNumber) {
       loadAnnotations();
     }
-  }, [projectId, chapterNumber, pageNumber]);
+  }, [projectId, chapterNumber, pageNumber, fileUrl]); // Re-load annotations when file URL changes (new PDF uploaded)
 
   // Load annotations from database (all advisers' annotations)
   const loadAnnotations = async () => {
+    // Clear existing annotations first to prevent showing stale data
+    setAnnotations([]);
+    setSelectedAnnotation(null);
+    
     try {
+      console.log(`Loading annotations for project ${projectId}, chapter ${chapterNumber}, page ${pageNumber}`)
+      
       // First, get annotations
       const { data: annotationsData, error: annotationsError } = await supabase
         .from('chapter_annotations')
@@ -66,6 +72,8 @@ const StudentPDFViewer = ({
         .order('created_at', { ascending: true });
 
       if (annotationsError) throw annotationsError;
+
+      console.log(`Found ${annotationsData?.length || 0} annotations for this page`)
 
       // Then get adviser info for each annotation
       if (annotationsData && annotationsData.length > 0) {

@@ -8,11 +8,17 @@ import { Badge } from "@/components/ui/badge"
 import { Input } from "@/components/ui/input"
 import { Lightbulb, Search, Calendar, Eye, Edit3, Clock, CheckCircle, XCircle, AlertCircle, Download, FileText } from "lucide-react"
 import { supabase } from "@/supabase/client"
+import StudentPDFViewer from "@/components/StudentPDFViewer"
 
 const ResearchProposals = () => {
   const [proposals, setProposals] = useState([])
   const [loading, setLoading] = useState(true)
   const [searchQuery, setSearchQuery] = useState("")
+  
+  // PDF Viewer states
+  const [showPDFViewer, setShowPDFViewer] = useState(false)
+  const [pdfFileUrl, setPdfFileUrl] = useState(null)
+  const [pdfFileName, setPdfFileName] = useState(null)
 
   useEffect(() => {
     fetchProposals()
@@ -320,15 +326,38 @@ const ResearchProposals = () => {
                         <span className="text-xs sm:text-sm text-gray-600 flex-1 truncate">
                           {proposal.file_name || 'Research Proposal Document'}
                         </span>
-                        <Button
-                          variant="outline"
-                          size="sm"
-                          onClick={() => downloadFile(proposal.file_path, proposal.file_name)}
-                          className="text-xs w-full sm:w-auto"
-                        >
-                          <Download className="h-3 w-3 sm:h-4 sm:w-4 mr-1" />
-                          Download
-                        </Button>
+                        <div className="flex gap-2">
+                          {/* View PDF button if it's a PDF file */}
+                          {(proposal.file_type === 'application/pdf' || proposal.file_name?.toLowerCase().endsWith('.pdf')) && (
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              onClick={() => {
+                                const { data } = supabase.storage
+                                  .from('research-files')
+                                  .getPublicUrl(proposal.file_path);
+                                if (data?.publicUrl) {
+                                  setPdfFileUrl(data.publicUrl);
+                                  setPdfFileName(proposal.file_name || proposal.title);
+                                  setShowPDFViewer(true);
+                                }
+                              }}
+                              className="text-xs w-full sm:w-auto text-purple-600 border-purple-200 hover:bg-purple-50"
+                            >
+                              <Eye className="h-3 w-3 sm:h-4 sm:w-4 mr-1" />
+                              View PDF
+                            </Button>
+                          )}
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={() => downloadFile(proposal.file_path, proposal.file_name)}
+                            className="text-xs w-full sm:w-auto"
+                          >
+                            <Download className="h-3 w-3 sm:h-4 sm:w-4 mr-1" />
+                            Download
+                          </Button>
+                        </div>
                       </div>
                     </div>
                   )}
@@ -371,6 +400,21 @@ const ResearchProposals = () => {
           </div>
         )}
       </div>
+
+      {/* PDF Viewer Modal */}
+      {showPDFViewer && pdfFileUrl && (
+        <StudentPDFViewer
+          fileUrl={pdfFileUrl}
+          fileName={pdfFileName}
+          projectId={null}
+          chapterNumber={0}
+          onClose={() => {
+            setShowPDFViewer(false)
+            setPdfFileUrl(null)
+            setPdfFileName(null)
+          }}
+        />
+      )}
     </div>
   )
 }
