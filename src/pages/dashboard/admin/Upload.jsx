@@ -275,8 +275,10 @@ const UploadPage = () => {
 
         // Call notification function after successful upload and activity log
         await sendNotificationToStudents(
-          "New paper uploaded",
-          `A new research paper titled '${formData.title}' has been uploaded. Check it out!`
+          "New Research Paper Uploaded",
+          `A new research paper titled "${formData.title}" has been uploaded. Check it out!`,
+          'success',
+          '/student/browse'
         );
         
         // Show success message with citation count or warning

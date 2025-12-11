@@ -563,6 +563,58 @@ const ResearchHub = () => {
         setProposals(prev => [data, ...prev]);
       }
 
+      // Send notification to assigned adviser
+      if (groupId) {
+        try {
+          // Get the adviser assigned to this group
+          const { data: adviserAssignment, error: adviserError } = await supabase
+            .from('adviser_group_assignments')
+            .select('adviser_id')
+            .eq('group_id', groupId)
+            .single();
+
+          console.log('Adviser assignment:', adviserAssignment);
+
+          if (!adviserError && adviserAssignment?.adviser_id) {
+            // Get student name from users table
+            const { data: studentData } = await supabase
+              .from('users')
+              .select('firstName, lastName, email')
+              .eq('id', user.uid)
+              .single();
+
+            const studentName = studentData 
+              ? `${studentData.firstName || ''} ${studentData.lastName || ''}`.trim() || studentData.email
+              : user.email;
+
+            // Create notification for the adviser
+            const { data: notifData, error: notificationError } = await supabase
+              .from('notifications')
+              .insert([{
+                user_id: adviserAssignment.adviser_id,
+                title: 'New Research Proposal Submitted',
+                message: `${studentName} has submitted a new research proposal: "${proposalForm.title.trim()}"`,
+                type: 'info',
+                read: false,
+                link: '/adviser/proposals'
+              }])
+              .select();
+
+            if (notificationError) {
+              console.error('Error creating notification:', notificationError);
+            } else {
+              console.log('Notification created successfully:', notifData);
+            }
+          } else {
+            console.log('No adviser found for group:', groupId);
+          }
+        } catch (notifError) {
+          console.error('Error sending notification to adviser:', notifError);
+        }
+      } else {
+        console.log('No group ID found - notification not sent');
+      }
+
       // Reset form and close dialog
       setProposalForm({
         title: "",
@@ -572,6 +624,7 @@ const ResearchHub = () => {
         documents: []
       });
       setNewProposalDialogOpen(false);
+      alert('Proposal submitted successfully!');
 
     } catch (error) {
       console.error('Error creating proposal:', error);
@@ -904,6 +957,48 @@ const ResearchHub = () => {
 
       setUploadedFileName(file.name)
       
+      // Notify adviser about chapter upload
+      try {
+        // Get the adviser assigned to this project/group
+        const groupId = selectedProject.group_id;
+        if (groupId) {
+          const { data: adviserAssignment } = await supabase
+            .from('adviser_group_assignments')
+            .select('adviser_id')
+            .eq('group_id', groupId)
+            .single();
+
+          if (adviserAssignment?.adviser_id) {
+            // Get student name
+            const { data: studentData } = await supabase
+              .from('users')
+              .select('firstName, lastName, email')
+              .eq('id', user.uid)
+              .single();
+
+            const studentName = studentData 
+              ? `${studentData.firstName || ''} ${studentData.lastName || ''}`.trim() || studentData.email
+              : user.email;
+
+            await supabase
+              .from('notifications')
+              .insert([{
+                user_id: adviserAssignment.adviser_id,
+                title: `Chapter ${activeChapter} Uploaded`,
+                message: `${studentName} has uploaded Chapter ${activeChapter} for "${selectedProject.title}". ${isPDF ? 'Ready for review and annotation.' : ''}`,
+                type: 'info',
+                read: false,
+                link: '/adviser/progress',
+                metadata: { project_id: selectedProject.id, chapter_number: activeChapter }
+              }]);
+            
+            console.log('Notification sent to adviser about chapter upload');
+          }
+        }
+      } catch (notifError) {
+        console.error('Error sending upload notification:', notifError);
+      }
+
       // Show appropriate success message
       const isPDFFile = file.type === 'application/pdf' || file.name.toLowerCase().endsWith('.pdf')
       if (isPDFFile && deletedAnnotationsCount > 0) {

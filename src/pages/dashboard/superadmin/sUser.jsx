@@ -459,6 +459,34 @@ const UserManagement = () => {
       await fetchUserData()
       console.log('User data refreshed')
 
+      // Send notification to the promoted student
+      try {
+        const { data: adviserData } = await supabase
+          .from('users')
+          .select('firstName, lastName, email')
+          .eq('id', selectedAdviser)
+          .single();
+
+        const adviserName = adviserData 
+          ? `${adviserData.firstName || ''} ${adviserData.lastName || ''}`.trim() || adviserData.email
+          : 'your adviser';
+
+        await supabase
+          .from('notifications')
+          .insert([{
+            user_id: newProponentData.userId,
+            title: 'Promoted to Research Proponent! 🎓',
+            message: `Congratulations! You have been promoted to Research Proponent. ${adviserName} has been assigned as your adviser. You can now submit research proposals.`,
+            type: 'success',
+            read: false,
+            link: '/student/research/proposals'
+          }]);
+
+        console.log('Promotion notification sent to student');
+      } catch (notifError) {
+        console.error('Error sending promotion notification:', notifError);
+      }
+
       // Close modal and show success
       setIsAdviserSelectionModalOpen(false)
       setNewProponentData(null)

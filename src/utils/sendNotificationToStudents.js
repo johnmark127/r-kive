@@ -6,8 +6,10 @@ import { supabase } from '../supabase/client';
  * Sends a notification to all students when a new paper is uploaded by admin.
  * @param {string} title - Notification title
  * @param {string} message - Notification message
+ * @param {string} type - Notification type (info, success, warning, error)
+ * @param {string} link - Optional link to navigate to when clicked
  */
-export async function sendNotificationToStudents(title, message) {
+export async function sendNotificationToStudents(title, message, type = 'info', link = null) {
   console.log('Entered sendNotificationToStudents');
   try {
     // Fetch all student users
@@ -31,7 +33,9 @@ export async function sendNotificationToStudents(title, message) {
       user_id: student.id,
       title,
       message,
+      type,
       read: false,
+      ...(link && { link })
     }));
     console.log('Prepared notifications:', notifications);
 

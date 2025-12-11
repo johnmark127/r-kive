@@ -53,31 +53,96 @@ export const Header = ({ collapsed, setCollapsed }) => {
     useEffect(() => {
         const fetchNotifications = async () => {
             setLoadingNotifications(true);
-            // Get current user ID from Supabase Auth
-            const { data: { session } } = await supabase.auth.getSession();
-            const userId = session?.user?.id;
+            
+            // Get user ID from localStorage
+            const localUser = JSON.parse(localStorage.getItem('user') || '{}');
+            const userId = localUser.uid;
+            
             if (!userId) {
                 setNotifications([]);
                 setLoadingNotifications(false);
                 return;
             }
+            
             // Fetch notifications for this user
             const { data, error } = await supabase
                 .from('notifications')
                 .select('*')
                 .eq('user_id', userId)
                 .order('created_at', { ascending: false });
+            
             if (error) {
+                console.error('Error fetching notifications:', error);
                 setNotifications([]);
             } else {
                 setNotifications(data || []);
             }
             setLoadingNotifications(false);
         };
+        
         fetchNotifications();
+        
+        // Set up real-time subscription for new notifications
+        const localUser = JSON.parse(localStorage.getItem('user') || '{}');
+        if (localUser.uid) {
+            const channel = supabase
+                .channel('notifications-channel')
+                .on(
+                    'postgres_changes',
+                    {
+                        event: '*',
+                        schema: 'public',
+                        table: 'notifications',
+                        filter: `user_id=eq.${localUser.uid}`
+                    },
+                    () => {
+                        fetchNotifications();
+                    }
+                )
+                .subscribe();
+            
+            return () => {
+                supabase.removeChannel(channel);
+            };
+        }
     }, []);
 
     const unreadCount = notifications.filter(n => !n.read).length;
+
+    // Format time ago
+    const formatTimeAgo = (timestamp) => {
+        if (!timestamp) return '';
+        const now = new Date();
+        const past = new Date(timestamp);
+        const diffInSeconds = Math.floor((now - past) / 1000);
+        
+        if (diffInSeconds < 60) return 'Just now';
+        if (diffInSeconds < 3600) return `${Math.floor(diffInSeconds / 60)}m ago`;
+        if (diffInSeconds < 86400) return `${Math.floor(diffInSeconds / 3600)}h ago`;
+        if (diffInSeconds < 604800) return `${Math.floor(diffInSeconds / 86400)}d ago`;
+        return past.toLocaleDateString();
+    };
+
+    // Mark notification as read and navigate
+    const handleNotificationClick = async (notification) => {
+        // Mark as read
+        const { error } = await supabase
+            .from('notifications')
+            .update({ read: true })
+            .eq('id', notification.id);
+        
+        if (!error) {
+            setNotifications(prev => 
+                prev.map(n => n.id === notification.id ? { ...n, read: true } : n)
+            );
+        }
+
+        // Navigate if link exists
+        if (notification.link) {
+            setIsNotificationOpen(false);
+            navigate(notification.link);
+        }
+    };
 
     return (
         <header className="flex h-[60px] items-center justify-between border-b border-slate-300 bg-white px-3 sm:px-6 transition-colors dark:border-slate-700 dark:bg-slate-900">
@@ -147,9 +212,11 @@ export const Header = ({ collapsed, setCollapsed }) => {
                                     notifications.map((notification) => (
                                         <div
                                             key={notification.id}
+                                            onClick={() => handleNotificationClick(notification)}
                                             className={cn(
                                                 "px-4 py-3 border-b border-slate-100 dark:border-slate-700 hover:bg-slate-50 dark:hover:bg-slate-700/50 cursor-pointer transition-colors",
-                                                !notification.read && "bg-blue-50 dark:bg-blue-900/10"
+                                                !notification.read && "bg-blue-50 dark:bg-blue-900/10",
+                                                notification.link && "hover:bg-blue-50 dark:hover:bg-blue-900/20"
                                             )}
                                         >
                                             <div className="flex items-start gap-3">
@@ -178,7 +245,7 @@ export const Header = ({ collapsed, setCollapsed }) => {
                                                         {notification.message}
                                                     </p>
                                                     <p className="text-xs text-slate-500 dark:text-slate-500 mt-1">
-                                                        {notification.time}
+                                                        {formatTimeAgo(notification.created_at)}
                                                     </p>
                                                 </div>
                                             </div>

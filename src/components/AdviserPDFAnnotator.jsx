@@ -211,6 +211,44 @@ const AdviserPDFAnnotator = ({
         console.log(`Chapter ${chapterNumber} status and feedback updated`);
       }
       
+      // Send notification to student about annotation
+      try {
+        const { data: projectData } = await supabase
+          .from('research_projects')
+          .select('student_id, title')
+          .eq('id', projectId)
+          .single();
+
+        if (projectData?.student_id) {
+          // Get adviser name
+          const { data: adviserData } = await supabase
+            .from('users')
+            .select('firstName, lastName, email')
+            .eq('id', adviserId)
+            .single();
+
+          const adviserName = adviserData 
+            ? `${adviserData.firstName || ''} ${adviserData.lastName || ''}`.trim() || adviserData.email
+            : 'Your adviser';
+
+          await supabase
+            .from('notifications')
+            .insert([{
+              user_id: projectData.student_id,
+              title: `Chapter ${chapterNumber} Feedback Received`,
+              message: `${adviserName} has added annotations to Chapter ${chapterNumber} of "${projectData.title}". Please review the feedback.`,
+              type: 'warning',
+              read: false,
+              link: '/student/research/projects',
+              metadata: { project_id: projectId, chapter_number: chapterNumber }
+            }]);
+          
+          console.log('Notification sent to student about annotation');
+        }
+      } catch (notifError) {
+        console.error('Error sending annotation notification:', notifError);
+      }
+
       // Clear selection
       setSelectedText(null);
       setShowCommentBox(false);

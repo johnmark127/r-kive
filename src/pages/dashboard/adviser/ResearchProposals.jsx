@@ -309,13 +309,86 @@ const ReviewSubmissions = () => {
           chapter_5_feedback: '',
           target_completion: null
         };
-        const { error: projectError } = await supabase
+        const { data: newProject, error: projectError } = await supabase
           .from('research_projects')
-          .insert([projectData]);
+          .insert([projectData])
+          .select()
+          .single();
+        
         if (projectError) {
           console.error('Error creating project:', projectError);
+        } else if (newProject) {
+          // Notify all superadmins about the new project
+          try {
+            const { data: superadmins } = await supabase
+              .from('users')
+              .select('id')
+              .eq('role', 'superadmin');
+
+            if (superadmins && superadmins.length > 0) {
+              const notifications = superadmins.map(admin => ({
+                user_id: admin.id,
+                title: 'New Research Project Created',
+                message: `A new research project "${selectedSubmission.title}" has been approved and created by ${currentUser.email || 'an adviser'}.`,
+                type: 'info',
+                read: false,
+                link: '/superadmin/repository'
+              }));
+
+              await supabase
+                .from('notifications')
+                .insert(notifications);
+              
+              console.log('Superadmin notifications sent for new project');
+            }
+          } catch (notifError) {
+            console.error('Error sending superadmin notification:', notifError);
+          }
         }
       }
+
+      // Send notification to student about the review
+      if (selectedSubmission.student_id) {
+        try {
+          let notificationTitle = '';
+          let notificationMessage = '';
+          let notificationType = 'info';
+
+          if (reviewStatus === 'approved') {
+            notificationTitle = 'Research Proposal Approved! 🎉';
+            notificationMessage = `Your research proposal "${selectedSubmission.title}" has been approved by your adviser. You can now proceed with your research.`;
+            notificationType = 'success';
+          } else if (reviewStatus === 'revision_required') {
+            notificationTitle = 'Revision Required for Your Proposal';
+            notificationMessage = `Your adviser has requested revisions for "${selectedSubmission.title}". Please check the comments and resubmit.`;
+            notificationType = 'warning';
+          } else if (reviewStatus === 'rejected') {
+            notificationTitle = 'Research Proposal Not Approved';
+            notificationMessage = `Your research proposal "${selectedSubmission.title}" has not been approved. Please review the feedback.`;
+            notificationType = 'error';
+          }
+
+          if (notificationTitle) {
+            const { error: notificationError } = await supabase
+              .from('notifications')
+              .insert([{
+                user_id: selectedSubmission.student_id,
+                title: notificationTitle,
+                message: notificationMessage,
+                type: notificationType,
+                read: false,
+                link: '/student/research/proposals'
+              }]);
+
+            if (notificationError) {
+              console.error('Error creating notification:', notificationError);
+            }
+          }
+        } catch (notifError) {
+          console.error('Error sending notification to student:', notifError);
+        }
+      }
+
       // Refresh submissions
       await fetchSubmissions()
       setReviewModalOpen(false)

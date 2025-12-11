@@ -106,8 +106,10 @@ const AnnouncementsPage = () => {
 
       // Send notification to students
       await sendNotificationToStudents(
-        "New announcement posted",
-        `A new announcement, ${newTitle}, has been posted. Kindly check for details.`
+        "New Announcement Posted",
+        `${newTitle} - Check the announcements page for details.`,
+        'info',
+        '/admin/announcements'
       );
       showToast("Announcement created successfully!", "success")
       setShowCreateModal(false)
