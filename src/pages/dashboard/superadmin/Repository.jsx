@@ -1,6 +1,6 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
@@ -21,91 +21,139 @@ import {
   Activity,
   Plus,
   Edit3,
+  Loader2,
 } from "lucide-react"
+import { supabase } from "../../../supabase/client"
 
 export default function Repository() {
   const [selectedCategory, setSelectedCategory] = useState("all")
   const [selectedStatus, setSelectedStatus] = useState("all")
+  const [papers, setPapers] = useState([])
+  const [loading, setLoading] = useState(true)
+  const [stats, setStats] = useState({
+    totalPapers: 0,
+    totalDownloads: 0
+  })
 
-  // Mock data for repository statistics
+  // Fixed 5 categories (matching database values)
+  const predefinedCategories = [
+    { name: "Database Expert", color: "bg-blue-100 text-blue-800" },
+    { name: "Mobile App", color: "bg-green-100 text-green-800" },
+    { name: "cai (E-Learning/Computer-Aided Instruction Systems)", color: "bg-purple-100 text-purple-800" },
+    { name: "Website", color: "bg-yellow-100 text-yellow-800" },
+    { name: "software/hardware", color: "bg-red-100 text-red-800" },
+  ]
+
+  useEffect(() => {
+    fetchPapers()
+    fetchStats()
+  }, [])
+
+  const fetchPapers = async () => {
+    try {
+      setLoading(true)
+      const { data, error } = await supabase
+        .from('research_papers')
+        .select('*')
+        .order('uploaded_at', { ascending: false })
+
+      if (error) throw error
+      setPapers(data || [])
+    } catch (error) {
+      console.error('Error fetching papers:', error)
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  const fetchStats = async () => {
+    try {
+      // Fetch total research papers count
+      const { count } = await supabase
+        .from('research_papers')
+        .select('*', { count: 'exact', head: true })
+
+      // Fetch total views from paper_views_log (same as admin dashboard)
+      const { count: viewsCount } = await supabase
+        .from('paper_views_log')
+        .select('paper_id,user_id', { count: 'exact', head: true })
+
+      setStats({
+        totalPapers: count || 0,
+        totalDownloads: viewsCount || 0
+      })
+    } catch (error) {
+      console.error('Error fetching stats:', error)
+    }
+  }
+
+  const filteredPapers = papers.filter(paper => {
+    if (selectedCategory === "all") return true
+    
+    // Case-insensitive comparison and trim whitespace
+    const paperCategory = (paper.category || '').toLowerCase().trim()
+    const selectedCat = selectedCategory.toLowerCase().trim()
+    
+    return paperCategory === selectedCat
+  })
+
+  const getCategoryCount = (categoryName) => {
+    return papers.filter(p => {
+      const paperCat = (p.category || '').toLowerCase().trim()
+      const searchCat = categoryName.toLowerCase().trim()
+      return paperCat === searchCat
+    }).length
+  }
+
+  // Repository statistics with real data
   const repositoryStats = [
     {
-      title: "Total Projects",
-      value: "1,247",
-      change: "+23 this month",
+      title: "Total Papers",
+      value: stats.totalPapers.toString(),
+      change: "Uploaded by admin",
       icon: FileText,
       color: "bg-blue-50 text-blue-600",
     },
     {
-      title: "Pending Approval",
-      value: "18",
-      change: "+5 this week",
-      icon: Eye,
-      color: "bg-yellow-50 text-yellow-600",
-    },
-    {
       title: "Categories",
-      value: "12",
-      change: "+2 this semester",
+      value: "5",
+      change: "Research areas",
       icon: Tag,
       color: "bg-green-50 text-green-600",
     },
     {
-      title: "Total Downloads",
-      value: "8,934",
-      change: "+156 this week",
-      icon: Download,
+      title: "Total Views",
+      value: stats.totalDownloads.toString(),
+      change: "Repository access",
+      icon: Eye,
       color: "bg-purple-50 text-purple-600",
+    },
+    {
+      title: "This Month",
+      value: papers.filter(p => {
+        const uploadDate = new Date(p.uploaded_at)
+        const now = new Date()
+        return uploadDate.getMonth() === now.getMonth() && uploadDate.getFullYear() === now.getFullYear()
+      }).length.toString(),
+      change: "Recent uploads",
+      icon: Calendar,
+      color: "bg-yellow-50 text-yellow-600",
     },
   ]
 
-  // Mock data for recent projects
-  const recentProjects = [
-    {
-      id: 1,
-      title: "AI-Powered Student Management System",
-      author: "John Doe, Jane Smith",
-      department: "Computer Science",
-      uploadDate: "2024-01-15",
-      status: "approved",
-      downloads: 234,
-      category: "Software Development",
-      tags: ["AI", "Machine Learning", "Web Development"],
-    },
-    {
-      id: 2,
-      title: "Sustainable Energy Solutions for Rural Areas",
-      author: "Mike Johnson",
-      department: "Engineering",
-      uploadDate: "2024-01-14",
-      status: "pending",
-      downloads: 0,
-      category: "Environmental Engineering",
-      tags: ["Sustainability", "Energy", "Rural Development"],
-    },
-    {
-      id: 3,
-      title: "Digital Marketing Strategy for SMEs",
-      author: "Sarah Wilson, Tom Brown",
-      department: "Business Administration",
-      uploadDate: "2024-01-13",
-      status: "approved",
-      downloads: 156,
-      category: "Business Strategy",
-      tags: ["Marketing", "Digital", "SME"],
-    },
-    {
-      id: 4,
-      title: "Mobile Health Application for Elderly Care",
-      author: "Lisa Chen",
-      department: "Information Technology",
-      uploadDate: "2024-01-12",
-      status: "under_review",
-      downloads: 0,
-      category: "Healthcare Technology",
-      tags: ["Mobile App", "Healthcare", "Elderly Care"],
-    },
-  ]
+  // Map papers to display format
+  const recentProjects = filteredPapers.map(paper => ({
+    id: paper.id,
+    title: paper.title,
+    author: paper.authors || 'Unknown',
+    department: paper.category || 'Uncategorized',
+    uploadDate: new Date(paper.uploaded_at).toLocaleDateString(),
+    status: 'approved',
+    downloads: 0,
+    category: paper.category,
+    tags: paper.keywords ? paper.keywords.split(',').map(k => k.trim()).slice(0, 3) : [],
+    year: paper.year_published
+  }))
 
   // Mock data for admin activities
   const adminActivities = [
@@ -143,15 +191,11 @@ export default function Repository() {
     },
   ]
 
-  // Mock data for categories
-  const categories = [
-    { name: "Software Development", count: 234, color: "bg-blue-100 text-blue-800" },
-    { name: "Business Strategy", count: 189, color: "bg-green-100 text-green-800" },
-    { name: "Engineering", count: 156, color: "bg-purple-100 text-purple-800" },
-    { name: "Healthcare Technology", count: 123, color: "bg-red-100 text-red-800" },
-    { name: "Environmental Engineering", count: 98, color: "bg-yellow-100 text-yellow-800" },
-    { name: "Data Science", count: 87, color: "bg-indigo-100 text-indigo-800" },
-  ]
+  // Categories with counts from database
+  const categories = predefinedCategories.map(cat => ({
+    ...cat,
+    count: getCategoryCount(cat.name)
+  }))
 
   const getStatusBadge = (status) => {
     switch (status) {
@@ -238,27 +282,24 @@ export default function Repository() {
                       onChange={(e) => setSelectedCategory(e.target.value)}
                     >
                       <option value="all">All Categories</option>
-                      <option value="software">Software Development</option>
-                      <option value="business">Business Strategy</option>
-                      <option value="engineering">Engineering</option>
-                    </select>
-                  </div>
-                  <div className="flex items-center gap-2">
-                    <select
-                      className="border rounded-md px-3 py-1 text-sm"
-                      value={selectedStatus}
-                      onChange={(e) => setSelectedStatus(e.target.value)}
-                    >
-                      <option value="all">All Status</option>
-                      <option value="approved">Approved</option>
-                      <option value="pending">Pending</option>
-                      <option value="under_review">Under Review</option>
+                      {predefinedCategories.map((cat, idx) => (
+                        <option key={idx} value={cat.name}>{cat.name}</option>
+                      ))}
                     </select>
                   </div>
                 </div>
 
                 {/* Projects List */}
-                <div className="space-y-4">
+                {loading ? (
+                  <div className="flex items-center justify-center py-8">
+                    <Loader2 className="h-8 w-8 animate-spin text-gray-400" />
+                  </div>
+                ) : recentProjects.length === 0 ? (
+                  <div className="text-center py-8 text-gray-500">
+                    No papers found
+                  </div>
+                ) : (
+                  <div className="space-y-4 max-h-[600px] overflow-y-auto pr-2">
                   {recentProjects.map((project) => (
                     <div key={project.id} className="border rounded-lg p-4 hover:bg-gray-50 transition-colors">
                       <div className="flex items-start justify-between">
@@ -277,11 +318,16 @@ export default function Repository() {
                               <Calendar className="h-4 w-4" />
                               {project.uploadDate}
                             </span>
+                            {project.year && (
+                              <span className="flex items-center gap-1">
+                                <FileText className="h-4 w-4" />
+                                Year: {project.year}
+                              </span>
+                            )}
                           </div>
                           <div className="flex items-center gap-2 mb-2">
-                            {getStatusBadge(project.status)}
+                            <Badge className="bg-green-100 text-green-800">Published</Badge>
                             <Badge variant="outline">{project.category}</Badge>
-                            <span className="text-sm text-gray-500">{project.downloads} downloads</span>
                           </div>
                           <div className="flex flex-wrap gap-1">
                             {project.tags.map((tag, tagIndex) => (
@@ -292,27 +338,15 @@ export default function Repository() {
                           </div>
                         </div>
                         <div className="flex items-center gap-2 ml-4">
-                          <Button size="sm" variant="outline">
+                          <Button size="sm" variant="outline" title="View Paper">
                             <Eye className="h-4 w-4" />
                           </Button>
-                          <Button size="sm" variant="outline">
-                            <Edit3 className="h-4 w-4" />
-                          </Button>
-                          {project.status === "pending" && (
-                            <>
-                              <Button size="sm" className="bg-green-600 hover:bg-green-700">
-                                <CheckCircle className="h-4 w-4" />
-                              </Button>
-                              <Button size="sm" variant="destructive">
-                                <XCircle className="h-4 w-4" />
-                              </Button>
-                            </>
-                          )}
                         </div>
                       </div>
                     </div>
                   ))}
                 </div>
+                )}
               </CardContent>
             </Card>
           </div>
@@ -322,14 +356,9 @@ export default function Repository() {
             {/* Categories Management */}
             <Card>
               <CardHeader>
-                <CardTitle className="flex items-center justify-between">
-                  <span className="flex items-center gap-2">
-                    <Tag className="h-5 w-5" />
-                    Categories
-                  </span>
-                  <Button size="sm" variant="outline">
-                    <Plus className="h-4 w-4" />
-                  </Button>
+                <CardTitle className="flex items-center gap-2">
+                  <Tag className="h-5 w-5" />
+                  Categories
                 </CardTitle>
               </CardHeader>
               <CardContent>
@@ -339,12 +368,7 @@ export default function Repository() {
                       <div className="flex items-center gap-2">
                         <Badge className={category.color}>{category.name}</Badge>
                       </div>
-                      <div className="flex items-center gap-2">
-                        <span className="text-sm text-gray-600">{category.count}</span>
-                        <Button size="sm" variant="ghost">
-                          <Edit3 className="h-3 w-3" />
-                        </Button>
-                      </div>
+                      <span className="text-sm text-gray-600">{category.count}</span>
                     </div>
                   ))}
                 </div>

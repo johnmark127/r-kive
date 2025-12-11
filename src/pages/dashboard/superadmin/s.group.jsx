@@ -914,8 +914,15 @@ export default function GroupManagement() {
                           <div key={num} className="border border-gray-200 rounded-lg p-4">
                             <div className="flex items-center justify-between">
                               <div className="flex items-center space-x-4">
-                                <div className={`w-8 h-8 rounded-full flex items-center justify-center text-sm font-bold ${completed ? 'bg-green-500 text-white' : status === 'pending_review' ? 'bg-yellow-500 text-white' : status === 'in_progress' ? 'bg-blue-500 text-white' : 'bg-gray-300 text-gray-600'}`}>
-                                  {completed ? '✓' : status === 'pending_review' ? '⏳' : num}
+                                <div className={`w-8 h-8 rounded-full flex items-center justify-center text-sm font-bold ${
+                                  status === 'Completed' ? 'bg-green-500 text-white' :
+                                  status === 'To Revise' ? 'bg-yellow-500 text-white' :
+                                  status === 'Pending Review' ? 'bg-yellow-500 text-white' : 
+                                  'bg-gray-300 text-gray-600'
+                                }`}>
+                                  {status === 'Completed' ? '✓' : 
+                                   status === 'To Revise' ? '!' :
+                                   status === 'Pending Review' ? '⏳' : num}
                                 </div>
                                 <div className="flex-1">
                                   <h5 className="font-medium text-gray-900">
@@ -927,8 +934,16 @@ export default function GroupManagement() {
                                 </div>
                               </div>
                               <div className="flex items-center space-x-3">
-                                <Badge className={`${completed ? 'bg-green-100 text-green-800' : status === 'pending_review' ? 'bg-yellow-100 text-yellow-800' : status === 'in_progress' ? 'bg-blue-100 text-blue-800' : 'bg-gray-100 text-gray-800'}`}>
-                                  {status === 'pending_review' ? 'Pending Review' : completed ? 'Complete' : status === 'in_progress' ? 'In Progress' : 'Not Started'}
+                                <Badge className={`${
+                                  status === 'Completed' ? 'bg-green-100 text-green-800' :
+                                  status === 'To Revise' ? 'bg-yellow-100 text-yellow-800' :
+                                  status === 'Pending Review' ? 'bg-yellow-100 text-yellow-800' : 
+                                  'bg-gray-100 text-gray-800'
+                                }`}>
+                                  {status === 'Completed' ? 'Completed' : 
+                                   status === 'To Revise' ? 'To Revise' :
+                                   status === 'Pending Review' ? 'Pending Review' : 
+                                   status || 'Not Started'}
                                 </Badge>
                                 {/* View Annotations button for PDF chapters */}
                                 {projectDetails?.fullProject?.[`chapter_${num}_file_url`] && (
