@@ -7,6 +7,7 @@ import { Badge } from "@/components/ui/badge"
 import { Input } from "@/components/ui/input"
 import { Megaphone, Plus, Search, Edit, Trash2, Eye, Calendar, User, Filter, MoreHorizontal } from "lucide-react"
 import { supabase } from "@/supabase/client"
+import { sendNotificationToStudents } from "../../../utils/sendNotificationToStudents";
 import Toast from "@/components/Toast"
 
 const AnnouncementsPage = () => {
@@ -102,6 +103,12 @@ const AnnouncementsPage = () => {
           },
         },
       ]);
+
+      // Send notification to students
+      await sendNotificationToStudents(
+        "New announcement posted",
+        `A new announcement, ${newTitle}, has been posted. Kindly check for details.`
+      );
       showToast("Announcement created successfully!", "success")
       setShowCreateModal(false)
       setNewTitle("")

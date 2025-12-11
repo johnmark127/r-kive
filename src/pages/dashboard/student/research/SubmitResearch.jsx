@@ -6,6 +6,8 @@ import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Upload, FileText, AlertCircle, CheckCircle } from "lucide-react"
 import { supabase } from "../../../../supabase/client"
+import { sendNotificationToStudents } from "../../../../utils/sendNotificationToStudents";
+import { sendNotificationToUser } from "../../../../utils/sendNotificationToUser";
 
 const SubmitResearch = () => {
   const [formData, setFormData] = useState({
@@ -88,7 +90,7 @@ const SubmitResearch = () => {
       const isValidSize = file.size <= 10 * 1024 * 1024 // 10MB limit
       
       if (!isValidType) {
-        setSubmitError(`Invalid file type: ${file.name}. Only PDF, DOC, DOCX, and TXT files are allowed.`)
+        setSubmitError(`Invalid file type: ${file.name}. Only PDF is allowed.`)
         return false
       }
       
@@ -188,6 +190,36 @@ const SubmitResearch = () => {
       if (insertError) {
         throw new Error(`Failed to submit proposal: ${insertError.message}`)
       }
+
+    // Notify adviser assigned to the student's group
+    if (proposal && proposal.group_id) {
+      // Get adviser assignment for this group
+      const { data: adviserAssignment, error: adviserError } = await supabase
+        .from('adviser_group_assignments')
+        .select('adviser_id')
+        .eq('group_id', proposal.group_id)
+        .single();
+
+      if (!adviserError && adviserAssignment && adviserAssignment.adviser_id) {
+        // Get research proponent name (student)
+        let proponentName = currentUser?.email;
+        // Optionally, fetch full name from users table if available
+        const { data: studentUser } = await supabase
+          .from('users')
+          .select('firstName, lastName')
+          .eq('id', currentUser.uid)
+          .single();
+        if (studentUser && (studentUser.firstName || studentUser.lastName)) {
+          proponentName = `${studentUser.firstName || ''} ${studentUser.lastName || ''}`.trim();
+        }
+        // Send notification to adviser using utility
+        await sendNotificationToUser(
+          adviserAssignment.adviser_id,
+          'New Proposal Submission',
+          `A new research proposal has been submitted by ${proponentName}. Kindly review it.`
+        );
+      }
+    }
 
       // If files are uploaded, handle file upload and update the record
       if (formData.documents.length > 0) {

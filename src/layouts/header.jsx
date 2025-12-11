@@ -2,6 +2,7 @@ import { Menu, Moon, Sun, LogOut, User, Bell, ChevronDown } from "lucide-react";
 import { useTheme } from "../contexts/theme-context";
 import { cn } from "../utils/cn";
 import { useState, useRef, useEffect } from "react";
+import { supabase } from "@/supabase/client";
 import { useNavigate } from "react-router-dom";
 
 export const Header = ({ collapsed, setCollapsed }) => {
@@ -45,41 +46,36 @@ export const Header = ({ collapsed, setCollapsed }) => {
         return 'User';
     };
 
-    // Temporary notification data
-    const notifications = [
-        {
-            id: 1,
-            title: "Research Proposal Approved",
-            message: "Your research proposal has been approved by the committee.",
-            time: "5 minutes ago",
-            read: false,
-            type: "success"
-        },
-        {
-            id: 2,
-            title: "New Message from Adviser",
-            message: "Dr. Maria Santos sent you a message about your progress report.",
-            time: "1 hour ago",
-            read: false,
-            type: "message"
-        },
-        {
-            id: 3,
-            title: "Deadline Reminder",
-            message: "Your progress report is due in 3 days.",
-            time: "2 hours ago",
-            read: true,
-            type: "reminder"
-        },
-        {
-            id: 4,
-            title: "System Update",
-            message: "New features have been added to the research submission portal.",
-            time: "1 day ago",
-            read: true,
-            type: "info"
-        }
-    ];
+    // Fetch notifications for the logged-in user from Supabase
+    const [notifications, setNotifications] = useState([]);
+    const [loadingNotifications, setLoadingNotifications] = useState(true);
+
+    useEffect(() => {
+        const fetchNotifications = async () => {
+            setLoadingNotifications(true);
+            // Get current user ID from Supabase Auth
+            const { data: { session } } = await supabase.auth.getSession();
+            const userId = session?.user?.id;
+            if (!userId) {
+                setNotifications([]);
+                setLoadingNotifications(false);
+                return;
+            }
+            // Fetch notifications for this user
+            const { data, error } = await supabase
+                .from('notifications')
+                .select('*')
+                .eq('user_id', userId)
+                .order('created_at', { ascending: false });
+            if (error) {
+                setNotifications([]);
+            } else {
+                setNotifications(data || []);
+            }
+            setLoadingNotifications(false);
+        };
+        fetchNotifications();
+    }, []);
 
     const unreadCount = notifications.filter(n => !n.read).length;
 

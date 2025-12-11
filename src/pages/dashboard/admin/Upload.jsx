@@ -5,6 +5,7 @@
   import { useState, useEffect } from "react";
   import Toast from "@/components/Toast";
   import { supabase } from "@/supabase/client";
+  import { sendNotificationToStudents } from "../../../utils/sendNotificationToStudents";
   import * as pdfjsLib from 'pdfjs-dist';
   import pdfjsWorker from 'pdfjs-dist/build/pdf.worker.mjs?url';
 
@@ -214,7 +215,8 @@ const UploadPage = () => {
       .from("research-papers")
       .getPublicUrl(filename);
     const fileUrl = urlData.publicUrl;
-
+      console.log('Calling sendNotificationToStudents');
+      // Notify all students about the new paper upload
     // 4. Get current user ID from Supabase Auth
     const { data: { session } } = await supabase.auth.getSession();
     const userId = session?.user?.id;
@@ -270,6 +272,12 @@ const UploadPage = () => {
             },
           },
         ]);
+
+        // Call notification function after successful upload and activity log
+        await sendNotificationToStudents(
+          "New paper uploaded",
+          `A new research paper titled '${formData.title}' has been uploaded. Check it out!`
+        );
         
         // Show success message with citation count or warning
         if (edgeResult.warning) {
