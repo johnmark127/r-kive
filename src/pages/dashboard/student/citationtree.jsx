@@ -44,6 +44,16 @@ export default function CitationTreePage() {
   // Enhanced paper details
   const [detailedPaperInfo, setDetailedPaperInfo] = useState(null)
   const [showPaperDetails, setShowPaperDetails] = useState(false)
+  
+  // Citing papers (papers that cite the current paper)
+  const [citingPapers, setCitingPapers] = useState([])
+  const [showCitingPapersModal, setShowCitingPapersModal] = useState(false)
+  const [loadingCitingPapers, setLoadingCitingPapers] = useState(false)
+  
+  // Referenced papers (papers cited by the current paper)
+  const [referencedPapers, setReferencedPapers] = useState([])
+  const [showReferencedPapersModal, setShowReferencedPapersModal] = useState(false)
+  const [loadingReferencedPapers, setLoadingReferencedPapers] = useState(false)
 
   // Check if a paper was passed via navigation state
   useEffect(() => {
@@ -250,6 +260,108 @@ export default function CitationTreePage() {
     link.download = `citation-data-${selectedPaper?.title?.substring(0, 30) || 'export'}.json`
     link.href = URL.createObjectURL(blob)
     link.click()
+  }
+
+  // Fetch papers that cite the current paper
+  const fetchCitingPapers = async (paperId) => {
+    setLoadingCitingPapers(true)
+    try {
+      // Get all citations where the current paper is cited (with context)
+      const { data: citations, error: citationsError } = await supabase
+        .from('citations')
+        .select('citing_paper_id, citation_context')
+        .eq('cited_paper_id', paperId)
+      
+      if (citationsError) {
+        console.error('Error fetching citing papers:', citationsError)
+        setCitingPapers([])
+        return
+      }
+      
+      if (!citations || citations.length === 0) {
+        setCitingPapers([])
+        setLoadingCitingPapers(false)
+        return
+      }
+      
+      // Get the paper details for all citing papers
+      const citingPaperIds = citations.map(c => c.citing_paper_id)
+      const { data: papers, error: papersError } = await supabase
+        .from('research_papers')
+        .select('id, title, authors, year_published, abstract, category, views, file_url')
+        .in('id', citingPaperIds)
+      
+      if (papersError) {
+        console.error('Error fetching citing paper details:', papersError)
+        setCitingPapers([])
+      } else {
+        // Merge citation context with paper details
+        const papersWithContext = papers.map(paper => {
+          const citation = citations.find(c => c.citing_paper_id === paper.id)
+          return {
+            ...paper,
+            citation_context: citation?.citation_context || null
+          }
+        })
+        setCitingPapers(papersWithContext || [])
+      }
+    } catch (error) {
+      console.error('Error in fetchCitingPapers:', error)
+      setCitingPapers([])
+    } finally {
+      setLoadingCitingPapers(false)
+    }
+  }
+
+  // Fetch papers referenced by the current paper (papers it cites)
+  const fetchReferencedPapers = async (paperId) => {
+    setLoadingReferencedPapers(true)
+    try {
+      // Get all citations where the current paper is the citing paper (with context)
+      const { data: citations, error: citationsError } = await supabase
+        .from('citations')
+        .select('cited_paper_id, citation_context')
+        .eq('citing_paper_id', paperId)
+      
+      if (citationsError) {
+        console.error('Error fetching referenced papers:', citationsError)
+        setReferencedPapers([])
+        return
+      }
+      
+      if (!citations || citations.length === 0) {
+        setReferencedPapers([])
+        setLoadingReferencedPapers(false)
+        return
+      }
+      
+      // Get the paper details for all referenced papers
+      const referencedPaperIds = citations.map(c => c.cited_paper_id)
+      const { data: papers, error: papersError } = await supabase
+        .from('research_papers')
+        .select('id, title, authors, year_published, abstract, category, views, file_url')
+        .in('id', referencedPaperIds)
+      
+      if (papersError) {
+        console.error('Error fetching referenced paper details:', papersError)
+        setReferencedPapers([])
+      } else {
+        // Merge citation context with paper details
+        const papersWithContext = papers.map(paper => {
+          const citation = citations.find(c => c.cited_paper_id === paper.id)
+          return {
+            ...paper,
+            citation_context: citation?.citation_context || null
+          }
+        })
+        setReferencedPapers(papersWithContext || [])
+      }
+    } catch (error) {
+      console.error('Error in fetchReferencedPapers:', error)
+      setReferencedPapers([])
+    } finally {
+      setLoadingReferencedPapers(false)
+    }
   }
 
   // Fetch detailed paper information
@@ -982,10 +1094,24 @@ export default function CitationTreePage() {
                 </div>
                 
                 <div className="flex flex-wrap gap-2">
-                  <Badge variant="secondary" className="text-xs">
+                  <Badge 
+                    variant="secondary" 
+                    className="text-xs cursor-pointer hover:bg-gray-300 transition-colors"
+                    onClick={() => {
+                      fetchCitingPapers(selectedPaper.id)
+                      setShowCitingPapersModal(true)
+                    }}
+                  >
                     {citationData ? (citationData.citations || 0).toLocaleString() : (selectedPaper.citations || 0).toLocaleString()} cited by
                   </Badge>
-                  <Badge variant="outline" className="text-xs">
+                  <Badge 
+                    variant="outline" 
+                    className="text-xs cursor-pointer hover:bg-gray-200 transition-colors"
+                    onClick={() => {
+                      fetchReferencedPapers(selectedPaper.id)
+                      setShowReferencedPapersModal(true)
+                    }}
+                  >
                     {citationData ? ((citationData.children || []).length).toLocaleString() : '...'} references
                   </Badge>
                   {selectedPaper.similarity && (
@@ -1029,52 +1155,54 @@ export default function CitationTreePage() {
             )}
           </div>
 
-          <div className="bg-white rounded-lg shadow-sm border p-4 sm:p-6">
-            <h4 className="font-semibold text-gray-900 mb-3 sm:mb-4 text-sm sm:text-base">Semantically Related Papers</h4>
-            <div className="space-y-2 sm:space-y-3">
-              {!selectedPaper ? (
-                <div className="text-center py-4 sm:py-6">
-                  <div className="w-10 h-10 sm:w-12 sm:h-12 mx-auto bg-green-100 rounded-full flex items-center justify-center mb-2">
-                    <svg className="w-5 h-5 sm:w-6 sm:h-6 text-green-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" />
-                    </svg>
-                  </div>
-                  <p className="text-gray-500 text-xs sm:text-sm px-2">
-                    Related papers will appear here when you select a research paper
-                  </p>
-                </div>
-              ) : relatedPapers.length > 0 ? (
-                relatedPapers.slice(0, 5).map((paper, index) => (
-                  <div
-                    key={index}
-                    className="p-2.5 sm:p-3 border rounded-lg transition-all cursor-pointer border-green-200 hover:bg-green-50"
-                    onClick={() => {
-                      fetchPaperDetails(paper.id)
-                      setIsModalOpen(true)
-                    }}
-                  >
-                    <h4 className="font-medium text-gray-900 text-xs sm:text-sm mb-1 line-clamp-2">{paper.title}</h4>
-                    <div className="flex items-center justify-between gap-2">
-                      <div className="text-xs text-gray-600 truncate flex-1">{paper.author}</div>
-                      <Badge variant="outline" className="text-xs bg-green-50 text-green-700 whitespace-nowrap">
-                        {(paper.similarity * 100).toFixed(0)}%
-                      </Badge>
+          {showSimilarityLines && (
+            <div className="bg-white rounded-lg shadow-sm border p-4 sm:p-6">
+              <h4 className="font-semibold text-gray-900 mb-3 sm:mb-4 text-sm sm:text-base">Semantically Related Papers</h4>
+              <div className="space-y-2 sm:space-y-3">
+                {!selectedPaper ? (
+                  <div className="text-center py-4 sm:py-6">
+                    <div className="w-10 h-10 sm:w-12 sm:h-12 mx-auto bg-green-100 rounded-full flex items-center justify-center mb-2">
+                      <svg className="w-5 h-5 sm:w-6 sm:h-6 text-green-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" />
+                      </svg>
                     </div>
+                    <p className="text-gray-500 text-xs sm:text-sm px-2">
+                      Related papers will appear here when you select a research paper
+                    </p>
                   </div>
-                ))
-              ) : (
-                <div className="text-center py-4 sm:py-6">
-                  <div className="w-10 h-10 sm:w-12 sm:h-12 mx-auto bg-gray-100 rounded-full flex items-center justify-center mb-2">
-                    <svg className="w-5 h-5 sm:w-6 sm:h-6 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
-                    </svg>
+                ) : relatedPapers.length > 0 ? (
+                  relatedPapers.slice(0, 5).map((paper, index) => (
+                    <div
+                      key={index}
+                      className="p-2.5 sm:p-3 border rounded-lg transition-all cursor-pointer border-green-200 hover:bg-green-50"
+                      onClick={() => {
+                        fetchPaperDetails(paper.id)
+                        setIsModalOpen(true)
+                      }}
+                    >
+                      <h4 className="font-medium text-gray-900 text-xs sm:text-sm mb-1 line-clamp-2">{paper.title}</h4>
+                      <div className="flex items-center justify-between gap-2">
+                        <div className="text-xs text-gray-600 truncate flex-1">{paper.author}</div>
+                        <Badge variant="outline" className="text-xs bg-green-50 text-green-700 whitespace-nowrap">
+                          {(paper.similarity * 100).toFixed(0)}%
+                        </Badge>
+                      </div>
+                    </div>
+                  ))
+                ) : (
+                  <div className="text-center py-4 sm:py-6">
+                    <div className="w-10 h-10 sm:w-12 sm:h-12 mx-auto bg-gray-100 rounded-full flex items-center justify-center mb-2">
+                      <svg className="w-5 h-5 sm:w-6 sm:h-6 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                      </svg>
+                    </div>
+                    <p className="text-gray-500 text-xs sm:text-sm">No semantically related papers found</p>
+                    <p className="text-gray-400 text-xs mt-1">Try lowering the similarity threshold</p>
                   </div>
-                  <p className="text-gray-500 text-xs sm:text-sm">No semantically related papers found</p>
-                  <p className="text-gray-400 text-xs mt-1">Try lowering the similarity threshold</p>
-                </div>
-              )}
+                )}
+              </div>
             </div>
-          </div>
+          )}
 
           
         </div>
@@ -1097,10 +1225,26 @@ export default function CitationTreePage() {
                   <div>{selectedPaper.year_published}</div>
                 </div>
                 <div className="flex flex-wrap gap-2">
-                  <Badge variant="secondary" className="text-xs">
+                  <Badge 
+                    variant="secondary" 
+                    className="text-xs cursor-pointer hover:bg-gray-300 transition-colors"
+                    onClick={(e) => {
+                      e.stopPropagation()
+                      fetchCitingPapers(selectedPaper.id)
+                      setShowCitingPapersModal(true)
+                    }}
+                  >
                     {citationData ? (citationData.citations || 0).toLocaleString() : (selectedPaper.citations || 0).toLocaleString()} cited by
                   </Badge>
-                  <Badge variant="outline" className="text-xs">
+                  <Badge 
+                    variant="outline" 
+                    className="text-xs cursor-pointer hover:bg-gray-200 transition-colors"
+                    onClick={(e) => {
+                      e.stopPropagation()
+                      fetchReferencedPapers(selectedPaper.id)
+                      setShowReferencedPapersModal(true)
+                    }}
+                  >
                     {citationData ? ((citationData.children || []).length).toLocaleString() : '...'} references
                   </Badge>
                 </div>
@@ -1297,6 +1441,238 @@ export default function CitationTreePage() {
                 onClick={() => setIsModalOpen(false)}
                 variant="outline"
                 className="text-sm flex-1 xs:flex-none"
+              >
+                Close
+              </Button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Citing Papers Modal */}
+      {showCitingPapersModal && (
+        <div
+          className="fixed inset-0 bg-black/50 flex items-center justify-center z-[60] p-4 animate-in fade-in duration-200"
+          onClick={() => setShowCitingPapersModal(false)}
+        >
+          <div
+            className="bg-white rounded-lg shadow-xl p-4 sm:p-6 max-w-sm sm:max-w-3xl w-full max-h-[80vh] overflow-y-auto animate-in zoom-in-95 duration-200"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="flex items-start justify-between mb-4">
+              <div>
+                <h3 className="text-lg sm:text-xl font-bold text-gray-900">Papers Citing This Work</h3>
+                <p className="text-sm text-gray-600 mt-1">
+                  {loadingCitingPapers ? 'Loading...' : `${citingPapers.length} paper${citingPapers.length !== 1 ? 's' : ''} found`}
+                </p>
+              </div>
+              <button 
+                className="text-gray-400 hover:text-gray-600 p-1 flex-shrink-0" 
+                onClick={() => setShowCitingPapersModal(false)}
+              >
+                <svg className="w-5 h-5 sm:w-6 sm:h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                </svg>
+              </button>
+            </div>
+
+            {loadingCitingPapers ? (
+              <div className="flex items-center justify-center py-12">
+                <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
+              </div>
+            ) : citingPapers.length === 0 ? (
+              <div className="text-center py-12">
+                <div className="w-16 h-16 mx-auto bg-gray-100 rounded-full flex items-center justify-center mb-4">
+                  <BookOpen className="w-8 h-8 text-gray-400" />
+                </div>
+                <h4 className="text-lg font-medium text-gray-900 mb-2">No Citations Yet</h4>
+                <p className="text-sm text-gray-600">
+                  This paper has not been cited by other papers in the database.
+                </p>
+              </div>
+            ) : (
+              <div className="space-y-4">
+                {citingPapers.map((paper) => (
+                  <div
+                    key={paper.id}
+                    className="p-4 border rounded-lg hover:bg-gray-50 transition-all cursor-pointer"
+                    onClick={() => {
+                      setShowCitingPapersModal(false)
+                      fetchPaperDetails(paper.id)
+                      setIsModalOpen(true)
+                    }}
+                  >
+                    <h4 className="font-semibold text-gray-900 mb-2 text-sm sm:text-base line-clamp-2">
+                      {paper.title}
+                    </h4>
+                    <div className="space-y-1 text-xs sm:text-sm text-gray-600">
+                      <div className="flex items-start">
+                        <Users className="w-3 h-3 sm:w-4 sm:h-4 mr-2 mt-0.5 flex-shrink-0" />
+                        <span className="line-clamp-1">{paper.authors}</span>
+                      </div>
+                      <div className="flex items-center justify-between">
+                        <div className="flex items-center">
+                          <Calendar className="w-3 h-3 sm:w-4 sm:h-4 mr-2 flex-shrink-0" />
+                          <span>{paper.year_published}</span>
+                        </div>
+                        {paper.category && (
+                          <Badge variant="outline" className="text-xs">
+                            {paper.category}
+                          </Badge>
+                        )}
+                      </div>
+                    </div>
+                    {paper.abstract && (
+                      <p className="text-xs sm:text-sm text-gray-700 mt-2 line-clamp-2">
+                        {paper.abstract}
+                      </p>
+                    )}
+                    {paper.citation_context && (
+                      <div className="mt-3 pt-3 border-t bg-yellow-50 p-3 rounded-lg" onClick={(e) => e.stopPropagation()}>
+                        <div className="flex items-start mb-2">
+                          <svg className="w-4 h-4 mr-2 text-yellow-600 mt-0.5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                          </svg>
+                          <div className="flex-1">
+                            <p className="text-xs font-semibold text-yellow-800 mb-1">📌 Citation Evidence Found:</p>
+                            <p className="text-xs text-gray-700 italic leading-relaxed">
+                              "...{paper.citation_context}..."
+                            </p>
+                          </div>
+                        </div>
+                        <p className="text-xs text-gray-500 mt-2">This excerpt was automatically extracted from the paper where the citation was detected.</p>
+                      </div>
+                    )}
+                    {!paper.citation_context && (
+                      <div className="mt-3 pt-3 border-t">
+                        <p className="text-xs text-gray-500 italic">Citation context not available (older citation or manual entry)</p>
+                      </div>
+                    )}
+                  </div>
+                ))}
+              </div>
+            )}
+
+            <div className="mt-6 pt-4 border-t">
+              <Button 
+                onClick={() => setShowCitingPapersModal(false)}
+                className="w-full"
+              >
+                Close
+              </Button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Referenced Papers Modal */}
+      {showReferencedPapersModal && (
+        <div
+          className="fixed inset-0 bg-black/50 flex items-center justify-center z-[60] p-4 animate-in fade-in duration-200"
+          onClick={() => setShowReferencedPapersModal(false)}
+        >
+          <div
+            className="bg-white rounded-lg shadow-xl p-4 sm:p-6 max-w-sm sm:max-w-3xl w-full max-h-[80vh] overflow-y-auto animate-in zoom-in-95 duration-200"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="flex items-start justify-between mb-4">
+              <div>
+                <h3 className="text-lg sm:text-xl font-bold text-gray-900">References</h3>
+                <p className="text-sm text-gray-600 mt-1">
+                  {loadingReferencedPapers ? 'Loading...' : `${referencedPapers.length} paper${referencedPapers.length !== 1 ? 's' : ''} referenced`}
+                </p>
+              </div>
+              <button 
+                className="text-gray-400 hover:text-gray-600 p-1 flex-shrink-0" 
+                onClick={() => setShowReferencedPapersModal(false)}
+              >
+                <svg className="w-5 h-5 sm:w-6 sm:h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                </svg>
+              </button>
+            </div>
+
+            {loadingReferencedPapers ? (
+              <div className="flex items-center justify-center py-12">
+                <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
+              </div>
+            ) : referencedPapers.length === 0 ? (
+              <div className="text-center py-12">
+                <div className="w-16 h-16 mx-auto bg-gray-100 rounded-full flex items-center justify-center mb-4">
+                  <BookOpen className="w-8 h-8 text-gray-400" />
+                </div>
+                <h4 className="text-lg font-medium text-gray-900 mb-2">No References Found</h4>
+                <p className="text-sm text-gray-600">
+                  This paper does not reference other papers in the database.
+                </p>
+              </div>
+            ) : (
+              <div className="space-y-4">
+                {referencedPapers.map((paper) => (
+                  <div
+                    key={paper.id}
+                    className="p-4 border rounded-lg hover:bg-gray-50 transition-all cursor-pointer"
+                    onClick={() => {
+                      setShowReferencedPapersModal(false)
+                      fetchPaperDetails(paper.id)
+                      setIsModalOpen(true)
+                    }}
+                  >
+                    <h4 className="font-semibold text-gray-900 mb-2 text-sm sm:text-base line-clamp-2">
+                      {paper.title}
+                    </h4>
+                    <div className="space-y-1 text-xs sm:text-sm text-gray-600">
+                      <div className="flex items-start">
+                        <Users className="w-3 h-3 sm:w-4 sm:h-4 mr-2 mt-0.5 flex-shrink-0" />
+                        <span className="line-clamp-1">{paper.authors}</span>
+                      </div>
+                      <div className="flex items-center justify-between">
+                        <div className="flex items-center">
+                          <Calendar className="w-3 h-3 sm:w-4 sm:h-4 mr-2 flex-shrink-0" />
+                          <span>{paper.year_published}</span>
+                        </div>
+                        {paper.category && (
+                          <Badge variant="outline" className="text-xs">
+                            {paper.category}
+                          </Badge>
+                        )}
+                      </div>
+                    </div>
+                    {paper.abstract && (
+                      <p className="text-xs sm:text-sm text-gray-700 mt-2 line-clamp-2">
+                        {paper.abstract}
+                      </p>
+                    )}
+                    {paper.citation_context && (
+                      <div className="mt-3 pt-3 border-t bg-blue-50 p-3 rounded-lg" onClick={(e) => e.stopPropagation()}>
+                        <div className="flex items-start mb-2">
+                          <svg className="w-4 h-4 mr-2 text-blue-600 mt-0.5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                          </svg>
+                          <div className="flex-1">
+                            <p className="text-xs font-semibold text-blue-800 mb-1">📌 Citation Evidence Found:</p>
+                            <p className="text-xs text-gray-700 italic leading-relaxed">
+                              "...{paper.citation_context}..."
+                            </p>
+                          </div>
+                        </div>
+                        <p className="text-xs text-gray-500 mt-2">This excerpt shows where this reference appears in your paper.</p>
+                      </div>
+                    )}
+                    {!paper.citation_context && (
+                      <div className="mt-3 pt-3 border-t">
+                        <p className="text-xs text-gray-500 italic">Citation context not available (older citation or manual entry)</p>
+                      </div>
+                    )}
+                  </div>
+                ))}
+              </div>
+            )}
+
+            <div className="mt-6 pt-4 border-t">
+              <Button 
+                onClick={() => setShowReferencedPapersModal(false)}
+                className="w-full"
               >
                 Close
               </Button>

@@ -145,11 +145,16 @@ serve(async (req) => {
       for (const other of otherPapers) {
         console.log(`Checking if cites: "${other.title}" by ${other.authors} (${other.year_published})`);
         
-        if (isCitedInText(pdfText, other)) {
-          // Insert citation (new paper cites other)
+        const citationResult = findCitationContext(pdfText, other);
+        if (citationResult.found) {
+          // Insert citation with context (new paper cites other)
           const { error: citeError } = await supabase
             .from("citations")
-            .insert([{ citing_paper_id: paper_id_to_use, cited_paper_id: other.id }]);
+            .insert([{ 
+              citing_paper_id: paper_id_to_use, 
+              cited_paper_id: other.id,
+              citation_context: citationResult.context
+            }]);
           
           if (!citeError) {
             citation_count++;
@@ -326,8 +331,8 @@ async function extractTextFromPDF(pdfBuffer: ArrayBuffer): Promise<string> {
   }
 }
 
-// Helper: Check if a paper is cited in the text
-function isCitedInText(text: string, paper: { title: string; authors: string; year_published: number }): boolean {
+// Helper: Check if a paper is cited in the text and return context
+function findCitationContext(text: string, paper: { title: string; authors: string; year_published: number }): { found: boolean; context: string } {
   const normalizedText = text.toLowerCase();
   
   console.log(`\n=== Checking paper: "${paper.title}" ===`);
@@ -345,13 +350,26 @@ function isCitedInText(text: string, paper: { title: string; authors: string; ye
   console.log(`In text: "${superNormalizedText.substring(0, 100)}..." (${superNormalizedText.length} chars total)`);
   
   // Check for title match with aggressive space normalization
-  if (superNormalizedText.includes(superNormalizedTitle)) {
+  const normalizedIndex = superNormalizedText.indexOf(superNormalizedTitle);
+  if (normalizedIndex !== -1) {
     console.log(`✓ MATCH FOUND! Title match (space-normalized): "${paper.title}"`);
-    return true;
+    
+    // Find the position in the original text (approximate)
+    // Extract context: 200 chars before and after the match
+    const contextStart = Math.max(0, normalizedIndex - 200);
+    const contextEnd = Math.min(text.length, normalizedIndex + superNormalizedTitle.length + 200);
+    const context = text.substring(contextStart, contextEnd).trim();
+    
+    return { found: true, context: context };
   }
   
   console.log(`✗ No match found for: "${paper.title}"`);
-  return false;
+  return { found: false, context: '' };
+}
+
+// Legacy function for backward compatibility
+function isCitedInText(text: string, paper: { title: string; authors: string; year_published: number }): boolean {
+  return findCitationContext(text, paper).found;
 }
 
 // Helper: Extract reference/bibliography section
