@@ -9,6 +9,9 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from 
 import { LineChart, Line, BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from "recharts"
 import { TrendingUp, Users, FileText, Award, Eye, Activity, UserCheck, Loader2 } from "lucide-react"
 import { supabase } from "@/supabase/client"
+import { useNavigate } from "react-router-dom"
+import { useToast } from "@/components/ToastManager"
+import { exportSuperAdminDashboardReport } from "@/utils/exportSuperAdminDashboardReport"
 
 const progressData = [
   { month: "Jan", progress: 65 },
@@ -52,7 +55,10 @@ const activityLogs = [
 ]
 
 export default function AnalyticsDashboard() {
+  const navigate = useNavigate()
+  const { showToast } = useToast()
   const [loading, setLoading] = useState(true)
+  const [generatingDashboardReport, setGeneratingDashboardReport] = useState(false)
   const [stats, setStats] = useState({
     totalStudents: 0,
     totalAdvisers: 0,
@@ -481,6 +487,30 @@ export default function AnalyticsDashboard() {
       setLoading(false)
     }
   }
+
+  const handleGenerateDashboardReport = async () => {
+    setGeneratingDashboardReport(true)
+    try {
+      exportSuperAdminDashboardReport({
+        generatedAt: new Date(),
+        stats,
+        researchStages,
+        groupFilter,
+        groups: filteredGroups,
+        adviserPerformance,
+        activityLogs,
+        mostViewedPapers
+      })
+
+      showToast('Super Admin dashboard report downloaded.', 'success')
+    } catch (error) {
+      console.error('Failed to generate dashboard report:', error)
+      showToast('Failed to generate dashboard report.', 'error')
+    } finally {
+      setGeneratingDashboardReport(false)
+    }
+  }
+
   return (
     <div className="p-6 space-y-6 bg-gray-50 min-h-screen">
       <div className="bg-white rounded-lg p-6 shadow-sm border">
@@ -489,6 +519,23 @@ export default function AnalyticsDashboard() {
             <h1 className="text-2xl font-bold text-gray-900 mb-1">Super Admin Dashboard 📊</h1>
             <p className="text-gray-600">Comprehensive insights and monitoring for capstone projects</p>
           </div>
+          <Button
+            onClick={handleGenerateDashboardReport}
+            disabled={generatingDashboardReport || loading}
+            className="bg-blue-600 hover:bg-blue-700"
+          >
+            {generatingDashboardReport ? (
+              <>
+                <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                Generating...
+              </>
+            ) : (
+              <>
+                <FileText className="w-4 h-4 mr-2" />
+                Generate Dashboard Report
+              </>
+            )}
+          </Button>
         </div>
       </div>
 
@@ -792,8 +839,16 @@ export default function AnalyticsDashboard() {
 
       <div className="grid gap-6 lg:grid-cols-2">
         <Card>
-          <CardHeader>
+          <CardHeader className="flex flex-row items-center justify-between">
             <CardTitle className="text-lg font-semibold">Adviser Performance</CardTitle>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => navigate('/superadmin/adviser-monitoring')}
+            >
+              <FileText className="w-4 h-4 mr-2" />
+              Open Report Generator
+            </Button>
           </CardHeader>
           <CardContent>
             <div className="space-y-4">

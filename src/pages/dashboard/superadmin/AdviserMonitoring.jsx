@@ -7,14 +7,21 @@ import { Progress } from "@/components/ui/progress"
 import { Button } from "@/components/ui/button"
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog"
 import { Avatar, AvatarFallback } from "@/components/ui/avatar"
-import { Loader2, Clock, Calendar, MessageSquare, AlertTriangle, CheckCircle, XCircle, Target, TrendingDown, Star, Mail, Phone, BookOpen, GraduationCap, FileText, Users, Eye, Activity, Highlighter, TrendingUp, BarChart3 } from "lucide-react"
+import { Loader2, Clock, Calendar, MessageSquare, AlertTriangle, CheckCircle, XCircle, Target, TrendingDown, Star, Mail, Phone, BookOpen, GraduationCap, FileText, Users, Eye, Activity, Highlighter, TrendingUp, BarChart3, Download } from "lucide-react"
 import { supabase } from "@/supabase/client"
+import { useToast } from "@/components/ToastManager"
+import { exportSuperAdminAdviserReport } from "@/utils/exportSuperAdminAdviserReport"
 
 const AdviserMonitoring = () => {
+  const { showToast } = useToast()
   const [loading, setLoading] = useState(true)
   const [advisers, setAdvisers] = useState([])
   const [selectedAdviser, setSelectedAdviser] = useState(null)
+  const [reportAdviserFilter, setReportAdviserFilter] = useState('all')
+  const [generatingReport, setGeneratingReport] = useState(false)
   const [timeFilter, setTimeFilter] = useState('month') // week, month, semester
+  const [customStartDate, setCustomStartDate] = useState('')
+  const [customEndDate, setCustomEndDate] = useState('')
   
   // Performance metrics state
   const [performanceMetrics, setPerformanceMetrics] = useState({
@@ -26,7 +33,67 @@ const AdviserMonitoring = () => {
 
   useEffect(() => {
     fetchAdviserData()
-  }, [timeFilter])
+  }, [timeFilter, customStartDate, customEndDate])
+
+  const getDateRangeBounds = (filter) => {
+    const now = new Date()
+    const start = new Date(now)
+    const end = new Date(now)
+
+    if (filter === 'week') {
+      start.setDate(now.getDate() - 7)
+      return { start, end }
+    }
+
+    if (filter === 'semester') {
+      start.setDate(now.getDate() - 180)
+      return { start, end }
+    }
+
+    if (filter === 'custom') {
+      if (!customStartDate || !customEndDate) {
+        return null
+      }
+
+      const customStart = new Date(customStartDate)
+      const customEnd = new Date(customEndDate)
+
+      if (Number.isNaN(customStart.getTime()) || Number.isNaN(customEnd.getTime()) || customStart > customEnd) {
+        return null
+      }
+
+      customEnd.setHours(23, 59, 59, 999)
+      return { start: customStart, end: customEnd }
+    }
+
+    start.setDate(now.getDate() - 30)
+    return { start, end }
+  }
+
+  const getFilterLabel = (filter) => {
+    if (filter === 'week') return 'Last 7 Days'
+    if (filter === 'semester') return 'Last 6 Months'
+    if (filter === 'custom') {
+      if (customStartDate && customEndDate) {
+        return `${customStartDate} to ${customEndDate}`
+      }
+      return 'Custom Date Range'
+    }
+    return 'Last 30 Days'
+  }
+
+  const isWithinDateRange = (value, bounds) => {
+    if (!value || !bounds) {
+      return false
+    }
+
+    const date = new Date(value)
+    if (Number.isNaN(date.getTime())) {
+      return false
+    }
+
+    return date >= bounds.start && date <= bounds.end
+  }
 
   const fetchAdviserData = async () => {
     setLoading(true)
@@ -54,7 +121,14 @@ const AdviserMonitoring = () => {
             id,
             group_name,
             is_active,
-            created_at
+            created_at,
+            research_projects (
+              id,
+              title,
+              progress,
+              status,
+              updated_at
+            )
           )
         `)
 
@@ -111,6 +185,9 @@ const AdviserMonitoring = () => {
 
       // Process the data to create adviser performance objects
       const processedAdvisers = adviserUsers?.map(adviser => {
+        const rangeBounds = getDateRangeBounds(timeFilter)
+        const now = new Date()
+
         // Get assignments for this adviser
         const adviserAssignments = groupAssignments?.filter(assignment => 
           assignment.adviser_id === adviser.id
@@ -120,16 +197,45 @@ const AdviserMonitoring = () => {
           assignment.student_groups.is_active
         )
 
+        const handledGroups = adviserAssignments.map((assignment) => {
+          const group = assignment.student_groups
+          const projects = group?.research_projects || []
+          const primaryProject = projects[0] || {}
+
+          return {
+            groupId: assignment.group_id,
+            groupName: group?.group_name || 'Unknown Group',
+            isActive: Boolean(group?.is_active),
+            assignedAt: assignment.assigned_at,
+            progress: Number(primaryProject.progress || 0),
+            status: primaryProject.status || 'unstarted',
+            projectTitle: primaryProject.title || 'Untitled Project',
+            lastUpdated: primaryProject.updated_at || group?.created_at || assignment.assigned_at
+          }
+        })
+
         // Get feedback count for this adviser by matching through group assignments
         const adviserGroupIds = adviserAssignments.map(assignment => assignment.group_id)
-        const adviserFeedback = researchProjects?.filter(project => 
+        const adviserFeedbackAll = researchProjects?.filter(project => 
           adviserGroupIds.includes(project.group_id)
         ) || []
 
+        const adviserFeedback = rangeBounds
+          ? adviserFeedbackAll.filter(project => isWithinDateRange(project.updated_at || project.created_at, rangeBounds))
+          : adviserFeedbackAll
+
         // Get annotation count for this adviser
-        const adviserAnnotations = annotationsData?.filter(annotation => 
-          annotation.adviser_id === adviser.id
-        ) || []
+        const adviserAnnotations = annotationsData?.filter(annotation => {
+          if (annotation.adviser_id !== adviser.id) {
+            return false
+          }
+
+          if (!rangeBounds) {
+            return true
+          }
+
+          return isWithinDateRange(annotation.created_at, rangeBounds)
+        }) || []
 
         // Count annotations by chapter
         const annotationsByChapter = adviserAnnotations.reduce((acc, annotation) => {
@@ -141,8 +247,6 @@ const AdviserMonitoring = () => {
         // Since we don't have student_group_members table, we'll estimate based on groups
         // Each group typically has 3-5 students, so we'll use groups * 4 as an estimate
         const studentsSupervised = activeGroups.length * 4
-
-        const now = new Date()
 
         // Find the most recent activity across feedback and annotations
         const allActivityDates = []
@@ -357,7 +461,11 @@ const AdviserMonitoring = () => {
           weeklyActivityScore: weeklyActivityScore,
           monthlyActivityScore: monthlyActivityScore,
           totalActivities: recentActivities.length,
-          recentActivities: topRecentActivities
+          recentActivities: topRecentActivities,
+          handledGroups: handledGroups,
+          averageGroupProgress: handledGroups.length > 0
+            ? Math.round(handledGroups.reduce((sum, group) => sum + group.progress, 0) / handledGroups.length)
+            : 0
         }
       }) || []
 
@@ -412,6 +520,74 @@ const AdviserMonitoring = () => {
     }
   }
 
+  const filteredAdvisers = reportAdviserFilter === 'all'
+    ? advisers
+    : advisers.filter((adviser) => adviser.id === reportAdviserFilter)
+
+  const handleGenerateReport = async () => {
+    setGeneratingReport(true)
+    try {
+      const selectedAdviserName = reportAdviserFilter === 'all'
+        ? 'All Advisers'
+        : (advisers.find((adviser) => adviser.id === reportAdviserFilter)?.name || 'Selected Adviser')
+
+      const rangeBounds = getDateRangeBounds(timeFilter)
+
+      if (!rangeBounds) {
+        showToast('Please provide a valid custom date range.', 'warning')
+        return
+      }
+
+      const reportAdvisers = filteredAdvisers.map((adviser) => {
+        const handledGroups = (adviser.handledGroups || []).filter((group) => {
+          const groupDate = group.lastUpdated || group.assignedAt
+          return isWithinDateRange(groupDate, rangeBounds)
+        })
+
+        return {
+          ...adviser,
+          handledGroups,
+          averageGroupProgress: handledGroups.length > 0
+            ? Math.round(handledGroups.reduce((sum, group) => sum + group.progress, 0) / handledGroups.length)
+            : 0
+        }
+      })
+
+      exportSuperAdminAdviserReport({
+        generatedAt: new Date(),
+        filterLabel: getFilterLabel(timeFilter),
+        startDate: rangeBounds.start,
+        endDate: rangeBounds.end,
+        selectedAdviserName,
+        performanceMetrics: {
+          totalAdvisers: reportAdvisers.length,
+          groupsAssigned: reportAdvisers.reduce((sum, adviser) => sum + adviser.assignedGroups, 0),
+          feedbackGiven: reportAdvisers.reduce((sum, adviser) => sum + adviser.feedbackCount, 0),
+          annotationCount: reportAdvisers.reduce((sum, adviser) => sum + adviser.annotationCount, 0),
+          averageGroupProgress: reportAdvisers.length > 0
+            ? Math.round(reportAdvisers.reduce((sum, adviser) => sum + adviser.averageGroupProgress, 0) / reportAdvisers.length)
+            : 0
+        },
+        advisers: reportAdvisers
+      })
+
+      showToast('Adviser performance report downloaded.', 'success')
+    } catch (error) {
+      console.error('Failed to generate adviser report:', error)
+      showToast('Failed to generate adviser report.', 'error')
+    } finally {
+      setGeneratingReport(false)
+    }
+  }
+
+  const handleResetFilters = () => {
+    setTimeFilter('month')
+    setReportAdviserFilter('all')
+    setCustomStartDate('')
+    setCustomEndDate('')
+    setSelectedAdviser(null)
+  }
+
   if (loading) {
     return (
       <div className="min-h-screen bg-gray-50 p-6 flex items-center justify-center">
@@ -427,12 +603,77 @@ const AdviserMonitoring = () => {
     <div className="min-h-screen bg-gray-50 p-6">
       {/* Header */}
       <div className="bg-white rounded-lg p-6 shadow-sm border mb-6">
-        <div className="flex items-center justify-between">
+        <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
           <div>
             <h1 className="text-2xl font-bold text-gray-900 mb-1">Adviser Monitoring Dashboard</h1>
             <p className="text-gray-600">Real-time overview of adviser performance and activity</p>
           </div>
-          <div className="flex gap-2">
+          <div className="flex flex-col gap-2 sm:flex-row sm:items-center">
+            <select
+              value={timeFilter}
+              onChange={(event) => setTimeFilter(event.target.value)}
+              className="h-9 rounded-md border border-gray-300 bg-white px-3 text-sm text-gray-700 focus:border-blue-600 focus:outline-none"
+            >
+              <option value="week">Last 7 Days</option>
+              <option value="month">Last 30 Days</option>
+              <option value="semester">Last 6 Months</option>
+              <option value="custom">Custom Range</option>
+            </select>
+            {timeFilter === 'custom' && (
+              <>
+                <input
+                  type="date"
+                  value={customStartDate}
+                  onChange={(event) => setCustomStartDate(event.target.value)}
+                  className="h-9 rounded-md border border-gray-300 bg-white px-3 text-sm text-gray-700 focus:border-blue-600 focus:outline-none"
+                  aria-label="Custom start date"
+                />
+                <input
+                  type="date"
+                  value={customEndDate}
+                  onChange={(event) => setCustomEndDate(event.target.value)}
+                  className="h-9 rounded-md border border-gray-300 bg-white px-3 text-sm text-gray-700 focus:border-blue-600 focus:outline-none"
+                  aria-label="Custom end date"
+                />
+              </>
+            )}
+            <select
+              value={reportAdviserFilter}
+              onChange={(event) => setReportAdviserFilter(event.target.value)}
+              className="h-9 rounded-md border border-gray-300 bg-white px-3 text-sm text-gray-700 focus:border-blue-600 focus:outline-none"
+            >
+              <option value="all">All Advisers</option>
+              {advisers.map((adviser) => (
+                <option key={adviser.id} value={adviser.id}>
+                  {adviser.name}
+                </option>
+              ))}
+            </select>
+            <Button
+              onClick={handleGenerateReport}
+              variant="outline"
+              size="sm"
+              disabled={generatingReport || filteredAdvisers.length === 0}
+            >
+              {generatingReport ? (
+                <>
+                  <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                  Generating...
+                </>
+              ) : (
+                <>
+                  <Download className="w-4 h-4 mr-2" />
+                  Generate Report
+                </>
+              )}
+            </Button>
+            <Button
+              onClick={handleResetFilters}
+              variant="ghost"
+              size="sm"
+            >
+              Reset Filters
+            </Button>
             <Button 
               onClick={fetchAdviserData}
               variant="default"
@@ -477,14 +718,14 @@ const AdviserMonitoring = () => {
 
       {/* Adviser Cards */}
       <div className="space-y-4">
-        {advisers.length === 0 ? (
+        {filteredAdvisers.length === 0 ? (
           <div className="bg-white rounded-lg shadow-sm border p-8 text-center">
             <Users className="w-12 h-12 text-gray-400 mx-auto mb-4" />
             <h3 className="text-lg font-semibold text-gray-900 mb-2">No Advisers Found</h3>
-            <p className="text-gray-600">There are currently no advisers in the system.</p>
+            <p className="text-gray-600">No advisers match the selected filters.</p>
           </div>
         ) : (
-          advisers.map((adviser, idx) => {
+          filteredAdvisers.map((adviser, idx) => {
             const hasPendingReview = adviser.recentActivities.some(activity => 
               activity.type === "review" && activity.description.toLowerCase().includes("pending")
             );
